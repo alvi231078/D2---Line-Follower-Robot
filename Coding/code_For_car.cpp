@@ -1,47 +1,46 @@
-// Motor control pins (L298N)
+// Motor control pins
 const int motorPin1 = 8;
 const int motorPin2 = 9;
 const int enablePin = 10;
 
-// Ultrasonic sensor pins
+// Ultrasonic sensor
 const int trigPin = 6;
 const int echoPin = 7;
 
-// Buzzer and warning LED
+// Warning indicators
 const int buzzerPin = 4;
 const int ledPin = 5;
 
-// IR sensors (new)
+// IR sensor pins
 const int irLeftPin = 2;
 const int irRightPin = 3;
 
 // Motor speeds
 const int forwardSpeed = 180;
-const int reverseSpeed = 160; // unused still
+const int reverseSpeed = 160;
 
-// Obstacle threshold for ultrasonic (cm)
+// Obstacle threshold (cm)
 const int distanceThreshold = 15;
 
 void setup() {
   setupMotorPins();
   setupSensorPins();
   setupWarningPins();
-  setupIRPins(); // new IR setup
+  setupIRPins();
 
-  Serial.begin(9600); // view data in Serial Monitor
+  Serial.begin(9600);
 }
 
 void loop() {
-  int distance = getDistance();     // check ultrasonic
-  bool irLeft = digitalRead(irLeftPin) == LOW;   // detect on left
-  bool irRight = digitalRead(irRightPin) == LOW; // detect on right
+  int distance = getDistance();                    // ultrasonic
+  bool irLeft = digitalRead(irLeftPin) == LOW;     // obstacle on left?
+  bool irRight = digitalRead(irRightPin) == LOW;   // obstacle on right?
 
   showDistance(distance);
-  showIRSensors(irLeft, irRight);  // new function
+  showIRSensors(irLeft, irRight);
 
-  controlMotor(distance);          // still reacts to ultrasonic
-
-  delay(500);
+  controlNavigation(distance, irLeft, irRight);     // new full control
+  delay(200); // reduced for quicker response
 }
 
 // Setup functions
@@ -61,13 +60,12 @@ void setupWarningPins() {
   pinMode(ledPin, OUTPUT);
 }
 
-// Set IR sensor pins
 void setupIRPins() {
   pinMode(irLeftPin, INPUT);
   pinMode(irRightPin, INPUT);
 }
 
-// Read distance with ultrasonic sensor
+// Read distance from ultrasonic
 int getDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -81,14 +79,14 @@ int getDistance() {
   return distance;
 }
 
-// Show distance on serial monitor
+// Serial debug: distance
 void showDistance(int distance) {
   Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
 }
 
-// Show IR sensor readings
+// Serial debug: IR sensors
 void showIRSensors(bool leftDetected, bool rightDetected) {
   Serial.print("IR Left: ");
   Serial.print(leftDetected ? "DETECTED" : "CLEAR");
@@ -96,18 +94,28 @@ void showIRSensors(bool leftDetected, bool rightDetected) {
   Serial.println(rightDetected ? "DETECTED" : "CLEAR");
 }
 
-// Motor logic based on ultrasonic (IR not affecting movement yet)
-void controlMotor(int distance) {
-  if (distance > distanceThreshold) {
-    moveForward();
-    stopWarning();
-  } else {
+// Main control logic with IR + ultrasonic
+void controlNavigation(int distance, bool irLeft, bool irRight) {
+  if (distance <= distanceThreshold) {
     stopMotor();
-    startWarning();
+    startWarning();  // object ahead!
+    return;
+  }
+
+  stopWarning(); // ultrasonic clear
+
+  if (irLeft && irRight) {
+    stopMotor();  // both sides blocked
+  } else if (irLeft) {
+    turnRight();  // only left sensor blocked
+  } else if (irRight) {
+    turnLeft();   // only right sensor blocked
+  } else {
+    moveForward();  // nothing detected
   }
 }
 
-// Motor control
+// Motor behaviors
 void moveForward() {
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
@@ -118,7 +126,21 @@ void stopMotor() {
   analogWrite(enablePin, 0);
 }
 
-// Alerts
+void turnLeft() {
+  // reverse one side to turn left (quick and dirty)
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, HIGH);
+  analogWrite(enablePin, reverseSpeed);
+}
+
+void turnRight() {
+  // standard forward turn logic (same as left but flipped)
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  analogWrite(enablePin, reverseSpeed);
+}
+
+// Warnings
 void startWarning() {
   digitalWrite(buzzerPin, HIGH);
   digitalWrite(ledPin, HIGH);
