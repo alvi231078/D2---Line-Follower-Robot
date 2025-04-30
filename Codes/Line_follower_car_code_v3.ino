@@ -33,6 +33,15 @@ void setup() {
 void loop() {
   long distance = getDistance();
 
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // Check if distance is approx. 100 cm (±2 cm)
+  if (distance >= 98 && distance <= 102) {
+    Serial.println(">>> Distance is around 100 cm <<<");
+  }
+
   // Obstacle check
   if (distance < 50.8) {
     stopMotors();
@@ -61,6 +70,8 @@ void loop() {
   else {
     moveForward(); // Both on white
   }
+
+  delay(100); // Delay for stability
 }
 
 // Read distance in cm
