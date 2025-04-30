@@ -1,87 +1,218 @@
-// pins for the motor, not 100% sure if enablePin needs PWM but I think yes
+// motor pins again
 const int motorPin1 = 8;
 const int motorPin2 = 9;
-const int enablePin = 10;  // connects to ENA on L298N
+const int enablePin = 10;
 
-// ultrasonic sensor stuff (HC-SR04 thingy)
-const int trigPin = 6;  // sends the signal
-const int echoPin = 7;  // gets the bounce-back
+// ultrasonic sensor (HC-SR04)
+const int trigPin = 6;
+const int echoPin = 7;
 
-// speeds – I think 255 is max for analogWrite?
+// new stuff: buzzer + warning LED
+const int buzzerPin = 4;
+const int ledPin = 5;
+
+// motor speed values – might tweak later
 const int forwardSpeed = 180;
-const int reverseSpeed = 160;  // not using this yet but might later
+const int reverseSpeed = 160;  // unused still, oops
 
-// if something is closer than this we stop (in cm, I think?)
-const int distanceThreshold = 15;
+const int distanceThreshold = 15;  // if closer than this → stop + alert
 
 void setup() {
-  setupMotorPins();      // set motor pins as output
-  setupSensorPins();     // same for ultrasonic sensor
-  Serial.begin(9600);    // so we can see what’s happening
+  setupMotorPins();
+  setupSensorPins();
+  setupWarningPins();  // new: for buzzer + LED
+
+  Serial.begin(9600);  // serial monitor to see distance
 }
 
 void loop() {
-  int distance = getDistance();  // get how far the thing is
-
-  showDistance(distance);        // print it to serial, for debugging or whatever
-
-  controlMotor(distance);        // run or stop based on distance
-
-  delay(500);  // maybe make this faster later?
+  int distance = getDistance();   // ping the sensor
+  showDistance(distance);         // print result
+  controlMotor(distance);         // act on result
+  delay(500);  // maybe reduce for quicker reaction?
 }
 
-// this sets the pins for motor – basic stuff
+// motor pins setup
 void setupMotorPins() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
-  pinMode(enablePin, OUTPUT);  // for speed control I guess
+  pinMode(enablePin, OUTPUT);
 }
 
-// sets up sensor pins – trig is out, echo is in
+// ultrasonic pins (trig out, echo in)
 void setupSensorPins() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
 }
 
-// send signal and measure how long it takes to bounce back
+// set up LED and buzzer pins as outputs
+void setupWarningPins() {
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+}
+
+// measure distance using ultrasonic
 int getDistance() {
   digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);  // not sure if this is necessary, but tutorials say yes
+  delayMicroseconds(2);
 
   digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);  // 10 microseconds pulse, pretty standard
+  delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(echoPin, HIGH);  // wait for echo
-  int distance = duration * 0.034 / 2;     // convert to cm (found this formula online)
-
-  return distance;  // hope this works lol
+  long duration = pulseIn(echoPin, HIGH);  // time for echo
+  int distance = duration * 0.034 / 2;     // convert to cm
+  return distance;
 }
 
-// just prints the distance – useful to see if the sensor works
+// print distance to serial
 void showDistance(int distance) {
-  Serial.print("Object is ");
+  Serial.print("Distance: ");
   Serial.print(distance);
-  Serial.println(" cm away");
+  Serial.println(" cm");
 }
 
-// decides what to do with motor based on distance
+// if object far: go forward
+// if close: stop + alert
 void controlMotor(int distance) {
   if (distance > distanceThreshold) {
-    moveForward();  // looks clear, go!
+    moveForward();
+    stopWarning();  // no need to panic
   } else {
-    stopMotor();    // whoa! too close
+    stopMotor();
+    startWarning();  // beep + blink
   }
 }
 
-// moves motor forward (just basic logic)
+// motor go brrr
 void moveForward() {
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
-  analogWrite(enablePin, forwardSpeed);  // make it go
+  analogWrite(enablePin, forwardSpeed);
 }
 
-// stops motor, probably could brake it harder but this works
+// motor no go
 void stopMotor() {
   analogWrite(enablePin, 0);
+}
+
+// buzzer and LED ON
+void startWarning() {
+  digitalWrite(buzzerPin, HIGH);
+  digitalWrite(ledPin, HIGH);
+}
+
+// buzzer and LED OFF
+void stopWarning() {
+  digitalWrite(buzzerPin, LOW);
+  digitalWrite(ledPin, LOW);
+}
+// motor pins again
+const int motorPin1 = 8;
+const int motorPin2 = 9;
+const int enablePin = 10;
+
+// ultrasonic sensor (HC-SR04)
+const int trigPin = 6;
+const int echoPin = 7;
+
+// new stuff: buzzer + warning LED
+const int buzzerPin = 4;
+const int ledPin = 5;
+
+// motor speed values – might tweak later
+const int forwardSpeed = 180;
+const int reverseSpeed = 160;  // unused still, oops
+
+const int distanceThreshold = 15;  // if closer than this → stop + alert
+
+void setup() {
+  setupMotorPins();
+  setupSensorPins();
+  setupWarningPins();  // new: for buzzer + LED
+
+  Serial.begin(9600);  // serial monitor to see distance
+}
+
+void loop() {
+  int distance = getDistance();   // ping the sensor
+  showDistance(distance);         // print result
+  controlMotor(distance);         // act on result
+  delay(500);  // maybe reduce for quicker reaction?
+}
+
+// motor pins setup
+void setupMotorPins() {
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+}
+
+// ultrasonic pins (trig out, echo in)
+void setupSensorPins() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+// set up LED and buzzer pins as outputs
+void setupWarningPins() {
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+}
+
+// measure distance using ultrasonic
+int getDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);  // time for echo
+  int distance = duration * 0.034 / 2;     // convert to cm
+  return distance;
+}
+
+// print distance to serial
+void showDistance(int distance) {
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+}
+
+// if object far: go forward
+// if close: stop + alert
+void controlMotor(int distance) {
+  if (distance > distanceThreshold) {
+    moveForward();
+    stopWarning();  // no need to panic
+  } else {
+    stopMotor();
+    startWarning();  // beep + blink
+  }
+}
+
+// motor go brrr
+void moveForward() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  analogWrite(enablePin, forwardSpeed);
+}
+
+// motor no go
+void stopMotor() {
+  analogWrite(enablePin, 0);
+}
+
+// buzzer and LED ON
+void startWarning() {
+  digitalWrite(buzzerPin, HIGH);
+  digitalWrite(ledPin, HIGH);
+}
+
+// buzzer and LED OFF
+void stopWarning() {
+  digitalWrite(buzzerPin, LOW);
+  digitalWrite(ledPin, LOW);
 }
