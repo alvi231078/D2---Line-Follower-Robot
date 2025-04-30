@@ -1,101 +1,87 @@
-// Motor control pins
+// pins for the motor, not 100% sure if enablePin needs PWM but I think yes
 const int motorPin1 = 8;
 const int motorPin2 = 9;
-const int enablePin = 10;
+const int enablePin = 10;  // connects to ENA on L298N
 
-// Ultrasonic sensor pins (HC-SR04)
-const int trigPin = 6;
-const int echoPin = 7;
+// ultrasonic sensor stuff (HC-SR04 thingy)
+const int trigPin = 6;  // sends the signal
+const int echoPin = 7;  // gets the bounce-back
 
-// Speed settings for the motor (0–255 range)
+// speeds – I think 255 is max for analogWrite?
 const int forwardSpeed = 180;
-const int reverseSpeed = 160;
+const int reverseSpeed = 160;  // not using this yet but might later
 
-// Minimum safe distance from an obstacle (in centimeters)
+// if something is closer than this we stop (in cm, I think?)
 const int distanceThreshold = 15;
 
 void setup() {
-  // Set motor pins as outputs
-  setupMotorPins();
-
-  // Set ultrasonic pins (trig = output, echo = input)
-  setupUltrasonicPins();
-
-  // Start serial monitor to see distance values
-  Serial.begin(9600);
+  setupMotorPins();      // set motor pins as output
+  setupSensorPins();     // same for ultrasonic sensor
+  Serial.begin(9600);    // so we can see what’s happening
 }
 
 void loop() {
-  // Measure how far the object is from the sensor
-  int distance = getDistance();
+  int distance = getDistance();  // get how far the thing is
 
-  // Show the distance in the serial monitor
-  printDistance(distance);
+  showDistance(distance);        // print it to serial, for debugging or whatever
 
-  // Decide what the motor should do based on the distance
-  controlMotor(distance);
+  controlMotor(distance);        // run or stop based on distance
 
-  // Wait a bit before repeating the loop
-  delay(500);
+  delay(500);  // maybe make this faster later?
 }
 
-// This sets the motor control pins as outputs
+// this sets the pins for motor – basic stuff
 void setupMotorPins() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
-  pinMode(enablePin, OUTPUT);
+  pinMode(enablePin, OUTPUT);  // for speed control I guess
 }
 
-// This sets up the ultrasonic sensor pins
-void setupUltrasonicPins() {
+// sets up sensor pins – trig is out, echo is in
+void setupSensorPins() {
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
 }
 
-// This function sends a pulse from the sensor and measures how long it takes to come back
+// send signal and measure how long it takes to bounce back
 int getDistance() {
   digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
+  delayMicroseconds(2);  // not sure if this is necessary, but tutorials say yes
 
   digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-
+  delayMicroseconds(10);  // 10 microseconds pulse, pretty standard
   digitalWrite(trigPin, LOW);
 
-  // Measure the time it takes for the echo to return
-  long duration = pulseIn(echoPin, HIGH);
+  long duration = pulseIn(echoPin, HIGH);  // wait for echo
+  int distance = duration * 0.034 / 2;     // convert to cm (found this formula online)
 
-  // Convert time (microseconds) to distance in cm
-  int distance = duration * 0.034 / 2;
-  return distance;
+  return distance;  // hope this works lol
 }
 
-// Prints the measured distance in the serial monitor
-void printDistance(int distance) {
-  Serial.print("Distance: ");
+// just prints the distance – useful to see if the sensor works
+void showDistance(int distance) {
+  Serial.print("Object is ");
   Serial.print(distance);
-  Serial.println(" cm");
+  Serial.println(" cm away");
 }
 
-// Turns the motor on or off depending on how close the object is
+// decides what to do with motor based on distance
 void controlMotor(int distance) {
   if (distance > distanceThreshold) {
-    // If it's safe, move forward
-    moveForward();
+    moveForward();  // looks clear, go!
   } else {
-    // Otherwise, stop the motor
-    stopMotor();
+    stopMotor();    // whoa! too close
   }
 }
 
-// Makes the motor spin forward
+// moves motor forward (just basic logic)
 void moveForward() {
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
-  analogWrite(enablePin, forwardSpeed);
+  analogWrite(enablePin, forwardSpeed);  // make it go
 }
 
-// Stops the motor
+// stops motor, probably could brake it harder but this works
 void stopMotor() {
   analogWrite(enablePin, 0);
 }
