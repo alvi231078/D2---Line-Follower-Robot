@@ -148,6 +148,11 @@ void avoidObstacle() {
 }
 
 // Safe recoverLine() with timeout
+// This function attempts to re-acquire the line after losing it
+// by spinning the robot in place until it detects the line again
+// or until a timeout occurs. It stops the motors if the timeout is reached.
+
+// Safe recoverLine() with timeout
 void recoverLine() {
   stopMotors();
   delay(100);
@@ -157,6 +162,7 @@ void recoverLine() {
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, HIGH);
+  // delay(100);
 
   unsigned long startTime = millis();
   while (digitalRead(IR_LEFT) == HIGH && digitalRead(IR_RIGHT) == HIGH) {
@@ -166,8 +172,9 @@ void recoverLine() {
       return;
     }
     delay(20);
-  }
 
+  }
+// Stop spinning
   stopMotors();
   Serial.println("✅ Line re-acquired.\n");
 }
