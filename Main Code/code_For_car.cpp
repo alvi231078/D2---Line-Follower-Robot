@@ -85,7 +85,7 @@ long getDistance() {
 
   long duration = pulseIn(ECHO_PIN, HIGH, 20000); // wait max 20ms
   if (duration == 0) return 999;  // no reading?? assume far away
-  return duration * 0.034 / 2;    // calc dist in cm, magic number
+  return duration * 0.034 / 2;    // calc d ist in cm, magic number
 }
 
 // all robot moves
@@ -158,8 +158,8 @@ void recoverLine() {
   delay(100); // just in case
 
 
-  
-  // spin in place (right side I think?)
+
+  // spin in place (right side I thin k?)
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
