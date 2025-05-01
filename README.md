@@ -27,17 +27,7 @@
 - Full `Serial Monitor` feedback for debugging
 - Code is modular and well-commented
 
----
 
-## 🚀 Future Improvements
-
-- Add a **third (center) IR sensor** for more accurate tracking
-- Implement **PWM motor speed control** with `analogWrite()`
-- Replace delays with **non-blocking state machines**
-- Add **Bluetooth remote override** or **autonomous mapping**
-
-
----
 
 ## 🧠 Author
 
