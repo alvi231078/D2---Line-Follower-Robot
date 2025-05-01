@@ -1,127 +1,162 @@
-// ==== Pins ====
+// =====================
+// === PIN DEFINITIONS ==
+// =====================
 
-const int ML1 = 9;
-const int ML2 = 10;
-const int MR1 = 5;
-const int MR2 = 6;
+#define MOTOR_L_FWD      9
+#define MOTOR_L_BWD      10
+#define MOTOR_R_FWD      5
+#define MOTOR_R_BWD      6
 
-const int TRIG = 7;
-const int ECHO = 8;
+#define TRIG_PIN         7
+#define ECHO_PIN         8
 
-const int IR_L = 2;
-const int IR_R = 3;
+#define IR_SENSOR_LEFT   2
+#define IR_SENSOR_RIGHT  3
 
-// ==== Constants ====
+// =====================
+// === CONFIGURATION ====
+// =====================
 
-const int OBSTACLE_CM = 30;
-const unsigned long RECOVER_MS = 3000;
-const unsigned long AVOID_MS = 5000;
+#define OBSTACLE_LIMIT_CM      30
+#define RECOVERY_TIMEOUT_MS    3000
+#define AVOID_TIMEOUT_MS       5000
 
-// ==== Setup ====
+// =====================
+// === SETUP ============
+// =====================
 
 void setup() {
-  pinMode(ML1, OUTPUT); pinMode(ML2, OUTPUT);
-  pinMode(MR1, OUTPUT); pinMode(MR2, OUTPUT);
+  pinMode(MOTOR_L_FWD, OUTPUT);
+  pinMode(MOTOR_L_BWD, OUTPUT);
+  pinMode(MOTOR_R_FWD, OUTPUT);
+  pinMode(MOTOR_R_BWD, OUTPUT);
 
-  pinMode(TRIG, OUTPUT); pinMode(ECHO, INPUT);
-  pinMode(IR_L, INPUT); pinMode(IR_R, INPUT);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  pinMode(IR_SENSOR_LEFT, INPUT);
+  pinMode(IR_SENSOR_RIGHT, INPUT);
 
   Serial.begin(9600);
 }
 
-// ==== Loop ====
+// =====================
+// === MAIN LOOP ========
+// =====================
 
 void loop() {
-  long d = distance();
-  bool l = digitalRead(IR_L);
-  bool r = digitalRead(IR_R);
+  long dist = readDistance();
+  bool leftIR  = digitalRead(IR_SENSOR_LEFT);
+  bool rightIR = digitalRead(IR_SENSOR_RIGHT);
 
-  Serial.print("Distance: "); Serial.print(d); Serial.println(" cm");
-  Serial.print("IR L: "); Serial.print(l ? "WHITE" : "BLACK");
-  Serial.print(" | IR R: "); Serial.println(r ? "WHITE" : "BLACK");
+  displayStatus(dist, leftIR, rightIR);
 
-  if      (d < OBSTACLE_CM)    { Serial.println("⚠️ Obstacle"); avoid(); return; }
-  else if (!l && !r)           { Serial.println("✅ Forward");  forward(); }
-  else if (!l && r)            { Serial.println("↪ Left");     left(); }
-  else if (l && !r)            { Serial.println("↩ Right");    right(); }
-  else                         { Serial.println("❓ Recover");  recover(); }
+  if      (dist < OBSTACLE_LIMIT_CM)      { Serial.println("⚠️ Obstacle ahead."); avoidObstacle(); return; }
+  else if (!leftIR && !rightIR)           { Serial.println("✅ Forward.");        driveForward(); }
+  else if (!leftIR &&  rightIR)           { Serial.println("↪ Left adjust.");     turnLeft();     }
+  else if ( leftIR && !rightIR)           { Serial.println("↩ Right adjust.");    turnRight();    }
+  else                                    { Serial.println("❓ Searching line.");   recoverLine();  }
 
   delay(100);
 }
 
-// ==== Distance ====
+// =====================
+// === SENSOR LOGIC =====
+// =====================
 
-long distance() {
-  digitalWrite(TRIG, LOW); delayMicroseconds(2);
-  digitalWrite(TRIG, HIGH); delayMicroseconds(10);
-  digitalWrite(TRIG, LOW);
+long readDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
 
-  long dur = pulseIn(ECHO, HIGH, 20000);
-  return dur == 0 ? 999 : dur * 0.034 / 2;
+  long duration = pulseIn(ECHO_PIN, HIGH, 20000);
+  if (duration == 0) return 999;
+
+  return duration * 0.034 / 2;
 }
 
-// ==== Movement ====
+void displayStatus(long dist, bool left, bool right) {
+  Serial.print("Distance: "); Serial.print(dist); Serial.println(" cm");
 
-void forward() {
-  digitalWrite(ML1, HIGH); digitalWrite(ML2, LOW);
-  digitalWrite(MR1, HIGH); digitalWrite(MR2, LOW);
+  Serial.print("IR Left: "); Serial.print(left ? "WHITE" : "BLACK");
+  Serial.print(" | IR Right: "); Serial.println(right ? "WHITE" : "BLACK");
 }
 
-void stopAll() {
-  digitalWrite(ML1, LOW); digitalWrite(ML2, LOW);
-  digitalWrite(MR1, LOW); digitalWrite(MR2, LOW);
+// =====================
+// === MOTOR ACTIONS ====
+// =====================
+
+void driveForward() {
+  digitalWrite(MOTOR_L_FWD, HIGH);  digitalWrite(MOTOR_L_BWD, LOW);
+  digitalWrite(MOTOR_R_FWD, HIGH);  digitalWrite(MOTOR_R_BWD, LOW);
 }
 
-void left() {
-  digitalWrite(ML1, LOW);  digitalWrite(ML2, HIGH);
-  digitalWrite(MR1, HIGH); digitalWrite(MR2, LOW);
+void stopMotors() {
+  digitalWrite(MOTOR_L_FWD, LOW);   digitalWrite(MOTOR_L_BWD, LOW);
+  digitalWrite(MOTOR_R_FWD, LOW);   digitalWrite(MOTOR_R_BWD, LOW);
 }
 
-void right() {
-  digitalWrite(ML1, HIGH); digitalWrite(ML2, LOW);
-  digitalWrite(MR1, LOW);  digitalWrite(MR2, HIGH);
+void turnLeft() {
+  digitalWrite(MOTOR_L_FWD, LOW);   digitalWrite(MOTOR_L_BWD, HIGH);
+  digitalWrite(MOTOR_R_FWD, HIGH);  digitalWrite(MOTOR_R_BWD, LOW);
 }
 
-// ==== Recovery ====
+void turnRight() {
+  digitalWrite(MOTOR_L_FWD, HIGH);  digitalWrite(MOTOR_L_BWD, LOW);
+  digitalWrite(MOTOR_R_FWD, LOW);   digitalWrite(MOTOR_R_BWD, HIGH);
+}
 
-void recover() {
-  stopAll(); delay(100);
-  digitalWrite(ML1, HIGH); digitalWrite(ML2, LOW);
-  digitalWrite(MR1, LOW);  digitalWrite(MR2, HIGH);
+// =====================
+// === OBSTACLE AVOIDANCE ==
+// =====================
 
-  unsigned long start = millis();
-  while (digitalRead(IR_L) && digitalRead(IR_R)) {
-    if (millis() - start > RECOVER_MS) {
-      Serial.println("❌ No line");
-      stopAll();
+void avoidObstacle() {
+  unsigned long startTime = millis();
+
+  turnRight();   delay(400);
+  driveForward();
+
+  unsigned long moveTime = millis();
+  while (millis() - moveTime < 1200) {
+    if (readDistance() > OBSTACLE_LIMIT_CM + 10) break;
+    delay(50);
+  }
+
+  turnLeft();    delay(400);
+  driveForward(); delay(500);
+
+  recoverLine();
+
+  if (millis() - startTime > AVOID_TIMEOUT_MS) {
+    Serial.println("❌ Avoid failed. Proceeding anyway.");
+    driveForward(); delay(1000);
+  }
+}
+
+// =====================
+// === LINE RECOVERY =====
+// =====================
+
+void recoverLine() {
+  stopMotors();
+  delay(100);
+
+  digitalWrite(MOTOR_L_FWD, HIGH);  digitalWrite(MOTOR_L_BWD, LOW);
+  digitalWrite(MOTOR_R_FWD, LOW);   digitalWrite(MOTOR_R_BWD, HIGH);
+
+  unsigned long startSpin = millis();
+
+  while (digitalRead(IR_SENSOR_LEFT) == HIGH && digitalRead(IR_SENSOR_RIGHT) == HIGH) {
+    if (millis() - startSpin > RECOVERY_TIMEOUT_MS) {
+      Serial.println("❌ Line not found.");
+      stopMotors();
       return;
     }
     delay(20);
   }
 
-  stopAll();
-  Serial.println("✅ Line found");
-}
-
-// ==== Avoidance ====
-
-void avoid() {
-  unsigned long start = millis();
-
-  right(); delay(400);
-  forward();
-  unsigned long fStart = millis();
-  while (millis() - fStart < 1200) {
-    if (distance() > OBSTACLE_CM + 10) break;
-    delay(50);
-  }
-
-  left(); delay(400);
-  forward(); delay(500);
-  recover();
-
-  if (millis() - start > AVOID_MS) {
-    Serial.println("❌ Giving up — continue");
-    forward(); delay(1000);
-  }
+  stopMotors();
+  Serial.println("✅ Line found.");
 }
