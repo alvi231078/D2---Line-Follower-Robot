@@ -12,6 +12,11 @@
 #define IR_LEFT 2
 #define IR_RIGHT 3
 
+// Safety constants
+#define OBSTACLE_DISTANCE_THRESHOLD 30   // cm
+#define RECOVERY_TIMEOUT 3000            // ms
+#define AVOID_TIMEOUT 5000               // ms
+
 void setup() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
@@ -29,7 +34,6 @@ void setup() {
 
 void loop() {
   long distance = getDistance();
-
   bool leftIR = digitalRead(IR_LEFT);   // HIGH = white, LOW = black
   bool rightIR = digitalRead(IR_RIGHT);
 
@@ -42,14 +46,12 @@ void loop() {
   Serial.print(" | IR Right: ");
   Serial.println(rightIR ? "WHITE" : "BLACK");
 
-  // Obstacle detected? Do full bypass
-  if (distance < 30) {
-    Serial.println("⚠️ Obstacle detected! Executing bypass maneuver...\n");
+  if (distance < OBSTACLE_DISTANCE_THRESHOLD) {
+    Serial.println("⚠️ Obstacle detected! Attempting bypass...\n");
     avoidObstacle();
     return;
   }
 
-  // Line following logic
   if (!leftIR && !rightIR) {
     Serial.println("✅ On track – moving forward.\n");
     moveForward();
@@ -63,21 +65,21 @@ void loop() {
     turnRight();
   }
   else {
-    Serial.println("🚫 Lost line – starting recovery...\n");
+    Serial.println("🚫 Lost line – recovering...\n");
     recoverLine();
   }
 
-  delay(150);
+  delay(100);
 }
 
-// Ultrasonic distance in cm
 long getDistance() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
-  long duration = pulseIn(ECHO_PIN, HIGH);
+  long duration = pulseIn(ECHO_PIN, HIGH, 20000); // timeout 20ms
+  if (duration == 0) return 999;  // treat as very far
   return duration * 0.034 / 2;
 }
 
@@ -110,42 +112,60 @@ void turnRight() {
   digitalWrite(motorPin4, HIGH);
 }
 
-// Bypass obstacle and re-enter the line
+// Smart bypass maneuver with timeout & checks
 void avoidObstacle() {
-  // Step 1: Turn right to leave the line
+  unsigned long start = millis();
+
+  // Step 1: Turn right
   turnRight();
   delay(400);
 
-  // Step 2: Drive forward to pass obstacle
+  // Step 2: Move forward beside obstacle
   moveForward();
-  delay(800);
+  unsigned long forwardStart = millis();
+  while (millis() - forwardStart < 1200) {
+    if (getDistance() > OBSTACLE_DISTANCE_THRESHOLD + 10) break;
+    delay(50);
+  }
 
-  // Step 3: Turn left to align with the line again
+  // Step 3: Turn back left
   turnLeft();
   delay(400);
 
-  // Step 4: Move forward and try to reacquire line
+  // Step 4: Move forward to re-align
   moveForward();
-  delay(600);
+  delay(500);
 
-  // Step 5: Try to find the line again
+  // Step 5: Try to re-enter line
   recoverLine();
+
+  // Fail-safe timeout
+  if (millis() - start > AVOID_TIMEOUT) {
+    Serial.println("❌ Obstacle bypass timeout. Resuming forward.\n");
+    moveForward();
+    delay(1000);
+  }
 }
 
-// Line recovery
+// Safe recoverLine() with timeout
 void recoverLine() {
   stopMotors();
   delay(100);
 
-  // Spin slowly until one sensor sees line
+  // Spin right to search
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, HIGH);
 
+  unsigned long startTime = millis();
   while (digitalRead(IR_LEFT) == HIGH && digitalRead(IR_RIGHT) == HIGH) {
-    Serial.println("🔄 Searching for line...");
-    delay(100);
+    if (millis() - startTime > RECOVERY_TIMEOUT) {
+      Serial.println("❌ Recovery failed: timeout. Stopping...\n");
+      stopMotors();
+      return;
+    }
+    delay(20);
   }
 
   stopMotors();
