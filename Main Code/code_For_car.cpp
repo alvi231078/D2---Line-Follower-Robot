@@ -116,7 +116,7 @@ void turnRight() {
 // ==== Behavior Functions ====
 void avoidObstacle() {
   unsigned long start = millis();
-
+//  Serial.println("🚧 Avoiding obstacle.");
   turnRight();
   delay(400);
 
@@ -132,7 +132,7 @@ void avoidObstacle() {
 
   moveForward();
   delay(500);
-
+//  Serial.println("🔄 Attempting to recover line.");
   recoverLine();
 
   if (millis() - start > AVOID_LIMIT_MS) {
