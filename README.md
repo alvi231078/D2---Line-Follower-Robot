@@ -44,10 +44,10 @@ When an object is detected within **30 cm** using an ultrasonic sensor:
 
 | Name                    | Title                            | Institution                                           |
 |-------------------------|----------------------------------|--------------------------------------------------------|
-| **Md Ratul Ahmed Alvi** | Electronics Engineering Student  | University of Applied Sciences Hamm-Lippstadt         |
-| **Md Jubair Salehin Razin** | Electronics Engineering Student  | University of Applied Sciences Hamm-Lippstadt         |
-| **Faysal Ahmed Tonmoy** | Electronics Engineering Student  | University of Applied Sciences Hamm-Lippstadt         |
-| **Mahin**               | Electronics Engineering Student  | University of Applied Sciences Hamm-Lippstadt         |
+| **Md Ratul Ahmed Alvi** | Electronics Engineering Student  | Hochschule Hamm-Lippstadt         |
+| **Md Jubair Salehin Razin** | Electronics Engineering Student  | Hochschule Hamm-Lippstadt         |
+| **Faysal Ahmed Tonmoy** | Electronics Engineering Student  | Hochschule Hamm-Lippstadt         |
+| **Mahin**               | Electronics Engineering Student  | Hochschule Hamm-Lippstadt         |
 
 ---
 
