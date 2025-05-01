@@ -23,48 +23,69 @@ void setup() {
 
   pinMode(IR_LEFT, INPUT);
   pinMode(IR_RIGHT, INPUT);
+
+  Serial.begin(9600);
 }
 
 void loop() {
   long distance = getDistance();
+
+  // IR sensor readings
+  bool leftIR = digitalRead(IR_LEFT);   // HIGH = white, LOW = black
+  bool rightIR = digitalRead(IR_RIGHT);
+
+  // Debug print – distance
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // Debug print – IR status
+  Serial.print("IR Left: ");
+  Serial.print(leftIR ? "WHITE" : "BLACK");
+  Serial.print(" | IR Right: ");
+  Serial.println(rightIR ? "WHITE" : "BLACK");
+
+  // Obstacle handling
   if (distance < 30) {
-    stopMotors(); // obstacle too close
+    Serial.println("⚠️ Obstacle detected! Stopping.\n");
+    stopMotors();
+    delay(500);
     return;
   }
 
-  bool leftIR = digitalRead(IR_LEFT);   // HIGH = white
-  bool rightIR = digitalRead(IR_RIGHT);
-
+  // Line following logic
   if (!leftIR && !rightIR) {
-    moveForward(); // both on line
+    Serial.println("✅ On track – moving forward.\n");
+    moveForward();
   }
   else if (!leftIR && rightIR) {
-    turnLeft(); // right drift, correct left
+    Serial.println("↪️ Correcting – turning left.\n");
+    turnLeft();
   }
   else if (leftIR && !rightIR) {
-    turnRight(); // left drift, correct right
+    Serial.println("↩️ Correcting – turning right.\n");
+    turnRight();
   }
   else {
-    // Both sensors see white: robot lost the line
+    Serial.println("🚫 Lost line – starting recovery...\n");
     recoverLine();
   }
 
-  delay(10); // smooth loop
+  delay(150); // control loop frequency
 }
 
-// Distance in cm using ultrasonic
+// Ultrasonic distance in cm
 long getDistance() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
   delayMicroseconds(10);
   digitalWrite(TRIG_PIN, LOW);
-
   long duration = pulseIn(ECHO_PIN, HIGH);
   return duration * 0.034 / 2;
 }
 
-// Movement functions
+// Motion
 void moveForward() {
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
@@ -93,27 +114,29 @@ void turnRight() {
   digitalWrite(motorPin4, HIGH);
 }
 
-// Improved recovery routine when line is lost
+// Line recovery
 void recoverLine() {
   stopMotors();
   delay(100);
 
-  // Step 1: reverse slightly
+  // Reverse slightly
   digitalWrite(motorPin1, LOW);
   digitalWrite(motorPin2, HIGH);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, HIGH);
   delay(250);
 
-  // Step 2: spin slowly until line is found again
+  // Spin right to search for line
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, HIGH);
 
   while (digitalRead(IR_LEFT) == HIGH && digitalRead(IR_RIGHT) == HIGH) {
-    delay(10);
+    Serial.println("🔄 Searching for line...");
+    delay(100);
   }
 
   stopMotors();
+  Serial.println("✅ Line re-acquired.\n");
 }
