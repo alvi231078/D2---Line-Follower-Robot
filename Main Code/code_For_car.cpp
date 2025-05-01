@@ -1,24 +1,23 @@
-// === Motor pins: our robot's little legs 🦿🦿 ===
-const int motorL1 = 9;    // Left forward
-const int motorL2 = 10;   // Left backward
-const int motorR1 = 5;    // Right forward
-const int motorR2 = 6;    // Right backward
+// === Motor pin configuration ===
+const int motorL1 = 9;    // Left motor forward
+const int motorL2 = 10;   // Left motor backward
+const int motorR1 = 5;    // Right motor forward
+const int motorR2 = 6;    // Right motor backward
 
-// === Ultrasonic sensor: the robot's eyes 👀 ===
-const int trigPin = 7;    // "Hey! Echo this pulse!"
-const int echoPin = 8;    // "Okay, I’ll time the bounce back."
+// === Ultrasonic distance sensor pins ===
+const int trigPin = 7;    // Trigger pin (sends pulse)
+const int echoPin = 8;    // Echo pin (receives pulse)
 
-// === IR sensors: to sniff the line like a bloodhound 🐶 ===
-const int irLeft  = 2;    // Left paw
-const int irRight = 3;    // Right paw
+// === IR sensors for line following ===
+const int irLeft  = 2;    // Left IR sensor
+const int irRight = 3;    // Right IR sensor
 
-// === Some magical numbers that work well ✨ ===
-const int obstacleThreshold = 30;      // If something’s closer than 30cm, PANIC!
-const long recoveryTimeout  = 3000;    // Max time to search for the line before we give up 😢
-const long avoidTimeout     = 5000;    // Max time we try to go around stuff
+// === Thresholds and limits ===
+const int obstacleThreshold = 30;      // Distance below which an obstacle is considered "too close" (in cm)
+const long recoveryTimeout  = 3000;    // Max time (ms) to search for a lost line
+const long avoidTimeout     = 5000;    // Max time (ms) to try avoiding an obstacle
 
 void setup() {
-  // Wake up all the muscles and senses
   pinMode(motorL1, OUTPUT);
   pinMode(motorL2, OUTPUT);
   pinMode(motorR1, OUTPUT);
@@ -30,42 +29,40 @@ void setup() {
   pinMode(irLeft, INPUT);
   pinMode(irRight, INPUT);
 
-  Serial.begin(9600); // Open our chat line 📡
+  Serial.begin(9600);
 }
 
 void loop() {
-  long distance = getDistance();     // "How close is the danger??"
+  long distance = getDistance();
   bool leftIR = digitalRead(irLeft);
   bool rightIR = digitalRead(irRight);
 
-  // Share the latest gossip from our sensors
-  reportStatus(distance, leftIR, rightIR);
+  printStatus(distance, leftIR, rightIR);
 
-  // Now make a wise decision 🤖
   if (distance < obstacleThreshold) {
-    Serial.println("😱 Too close for comfort! Dodging...");
+    Serial.println("Obstacle detected. Initiating avoidance maneuver.");
     avoid();
     return;
   }
 
   if (!leftIR && !rightIR) {
-    Serial.println("😎 All good. Zooming ahead!");
+    Serial.println("Line detected under both sensors. Moving forward.");
     moveForward();
   } else if (!leftIR && rightIR) {
-    Serial.println("↪️ Drifting right. Let's swing left.");
+    Serial.println("Right drift detected. Adjusting left.");
     turnLeft();
   } else if (leftIR && !rightIR) {
-    Serial.println("↩️ Drifting left. Time to swing right.");
+    Serial.println("Left drift detected. Adjusting right.");
     turnRight();
   } else {
-    Serial.println("🧐 Lost the line... Initiating detective mode.");
+    Serial.println("No line detected. Attempting to recover.");
     recover();
   }
 
-  delay(100); // Chill for a bit
+  delay(100);
 }
 
-// This function lets the robot measure distance like a bat 🦇
+// Sends a pulse and listens for echo to measure distance in centimeters
 long getDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -73,15 +70,15 @@ long getDistance() {
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(echoPin, HIGH, 20000); // Wait up to 20ms
-  if (duration == 0) return 999;                 // “I heard nothing… Must be far away!”
+  long duration = pulseIn(echoPin, HIGH, 20000);
+  if (duration == 0) return 999;
 
-  return duration * 0.034 / 2;                   // Convert echo time to distance
+  return duration * 0.034 / 2;
 }
 
-// Tells us what the robot sees and senses 🤓
-void reportStatus(long dist, bool left, bool right) {
-  Serial.print("📏 Distance: ");
+// Debug info for distance and IR sensors
+void printStatus(long dist, bool left, bool right) {
+  Serial.print("Distance: ");
   Serial.print(dist);
   Serial.println(" cm");
 
@@ -92,7 +89,7 @@ void reportStatus(long dist, bool left, bool right) {
   Serial.println(right ? "WHITE" : "BLACK");
 }
 
-// Let's go straight like a train on tracks 🚂
+// Moves the robot forward by setting both motors to forward
 void moveForward() {
   digitalWrite(motorL1, HIGH);
   digitalWrite(motorL2, LOW);
@@ -100,7 +97,7 @@ void moveForward() {
   digitalWrite(motorR2, LOW);
 }
 
-// Halt! Take a deep breath 😮‍💨
+// Stops all motors
 void stopMotors() {
   digitalWrite(motorL1, LOW);
   digitalWrite(motorL2, LOW);
@@ -108,7 +105,7 @@ void stopMotors() {
   digitalWrite(motorR2, LOW);
 }
 
-// Rotate to the left like you're dodging a water balloon 💦↩️
+// Spins the robot to the left
 void turnLeft() {
   digitalWrite(motorL1, LOW);
   digitalWrite(motorL2, HIGH);
@@ -116,7 +113,7 @@ void turnLeft() {
   digitalWrite(motorR2, LOW);
 }
 
-// Spin right like you're grooving to the beat 🔁
+// Spins the robot to the right
 void turnRight() {
   digitalWrite(motorL1, HIGH);
   digitalWrite(motorL2, LOW);
@@ -124,12 +121,12 @@ void turnRight() {
   digitalWrite(motorR2, HIGH);
 }
 
-// "Uh oh, I lost the trail!" — Spin until you find the line again 🕵️‍♂️
+// If both IR sensors see white, the robot lost the line and spins until it finds it again
 void recover() {
   stopMotors();
-  delay(100); // Take a moment to panic
+  delay(100);
 
-  // Start spinning to find the line again
+  // Begin spinning clockwise
   digitalWrite(motorL1, HIGH);
   digitalWrite(motorL2, LOW);
   digitalWrite(motorR1, LOW);
@@ -137,48 +134,44 @@ void recover() {
 
   unsigned long start = millis();
 
+  // Spin until at least one sensor sees black or timeout is hit
   while (digitalRead(irLeft) == HIGH && digitalRead(irRight) == HIGH) {
     if (millis() - start > recoveryTimeout) {
-      Serial.println("😭 Gave up... line is gone forever.");
+      Serial.println("Line recovery failed. Stopping.");
       stopMotors();
       return;
     }
-    delay(20); // Check again after a short nap
+    delay(20);
   }
 
   stopMotors();
-  Serial.println("🎉 Woohoo! Found the line again!");
+  Serial.println("Line successfully recovered.");
 }
 
-// This one is like a 5-step dance move to dodge trouble 🕺💃
+// Obstacle avoidance routine using a predefined sequence of turns and forward motion
 void avoid() {
   unsigned long start = millis();
 
-  // Step 1: Get outta there!
   turnRight();
   delay(400);
 
-  // Step 2: Sneak past the obstacle
   moveForward();
-  unsigned long moveTime = millis();
-  while (millis() - moveTime < 1200) {
+  unsigned long forwardStart = millis();
+  while (millis() - forwardStart < 1200) {
     if (getDistance() > obstacleThreshold + 10) break;
     delay(50);
   }
 
-  // Step 3: Back on track
   turnLeft();
   delay(400);
 
-  // Step 4: Move up a bit more
   moveForward();
   delay(500);
 
-  // Step 5: Try to find the line again
   recover();
 
   if (millis() - start > avoidTimeout) {
-    Serial.println("😤 Obstacle too stubborn! I'm going anyway.");
+    Serial.println("Avoidance timeout reached. Proceeding forward anyway.");
     moveForward();
     delay(1000);
   }
