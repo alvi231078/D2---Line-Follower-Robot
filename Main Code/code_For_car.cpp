@@ -36,7 +36,6 @@ void setup() {
   Serial.begin(9600);
 }
 
-// ========== Main Loop ==========
 
 void loop() {
   long distance = readUltrasonicDistance();
@@ -71,7 +70,6 @@ void loop() {
   delay(100); // small delay to stabilize reading
 }
 
-// ========== Sensor Functions ==========
 
 long readUltrasonicDistance() {
   digitalWrite(ULTRASONIC_TRIG, LOW);
