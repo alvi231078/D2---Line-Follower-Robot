@@ -24,7 +24,7 @@ This project demonstrates basic DC motor control using Simulink and an Arduino U
 
 ## 🔮 Planned Features
 - Add **IR Sensor** for line following (D2, D3)
-
+- Add **Ultrasonic Sensor** (HC-SR04) with **Servo Motor** for obstacle detection
 
 ## 📁 File
 - DC_Motor_Control_Arduino.slx` — Matlab Simulink
