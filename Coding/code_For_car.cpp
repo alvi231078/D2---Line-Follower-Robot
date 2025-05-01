@@ -13,39 +13,26 @@
 #define IR_RIGHT 3
 
 void setup() {
-  // Setup motor pins
+  // Motor pins
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
   pinMode(motorPin3, OUTPUT);
   pinMode(motorPin4, OUTPUT);
 
-  // Setup ultrasonic pins
+  // Ultrasonic
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
-  // Setup IR sensors
+  // IR sensors
   pinMode(IR_LEFT, INPUT);
   pinMode(IR_RIGHT, INPUT);
-
-  Serial.begin(9600); // Start serial monitor
 }
 
 void loop() {
+  // Distance sensor (optional, can disable if not needed)
   long distance = getDistance();
-
-  Serial.print("Distance: ");
-  Serial.print(distance);
-  Serial.println(" cm");
-
-  // Check if distance is around 100 cm
-  if (distance >= 98 && distance <= 102) {
-    Serial.println(">>> Distance is around 100 cm <<<");
-  }
-
-  // Obstacle too close? Stop!
-  if (distance < 50.8) {
-    Serial.println("⚠️ Obstacle ahead! Stopping...");
-    stopMotors();
+  if (distance < 30) {
+    stopMotors(); // obstacle too close
     return;
   }
 
@@ -53,36 +40,28 @@ void loop() {
   bool leftIR = digitalRead(IR_LEFT);   // HIGH = white, LOW = black
   bool rightIR = digitalRead(IR_RIGHT);
 
-  Serial.print("IR Left: ");
-  Serial.print(leftIR ? "WHITE" : "BLACK");
-  Serial.print(" | IR Right: ");
-  Serial.println(rightIR ? "WHITE" : "BLACK");
-
-  // IR-based navigation
+  // Core line following logic
   if (!leftIR && !rightIR) {
-    Serial.println("✅ On line: go straight");
-    moveForward();  // both on black – follow line
+    // Both on black – go straight
+    moveForward();
   }
   else if (!leftIR && rightIR) {
-    Serial.println("↪️ Adjusting left...");
+    // Left sees line – turn left
     turnLeft();
   }
   else if (leftIR && !rightIR) {
-    Serial.println("↩️ Adjusting right...");
+    // Right sees line – turn right
     turnRight();
   }
   else {
-    // Both sensors see white = lost the line
-    Serial.println("🚫 Line lost! Trying to recover...");
-    stopMotors();
-    delay(100);
-    recoverLine(); // new function
+    // Both on white – line lost, recover
+    recoverLine();
   }
 
-  delay(100); // loop delay for stability
+  delay(10); // small delay for smoother behavior
 }
 
-// Reads ultrasonic distance in cm
+// Distance reading with ultrasonic sensor
 long getDistance() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
@@ -123,19 +102,17 @@ void turnRight() {
   digitalWrite(motorPin4, HIGH);
 }
 
-// Recovery spin: slow spin until any IR sees black
+// Try to find the line again by spinning right slowly
 void recoverLine() {
-  // Slow spin right
+  // Spin right slowly until either sensor sees line again
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, HIGH);
 
   while (digitalRead(IR_LEFT) == HIGH && digitalRead(IR_RIGHT) == HIGH) {
-    Serial.print(".");  // visual feedback
-    delay(20);
+    delay(10); // short pause
   }
 
-  stopMotors();
-  Serial.println("\n✅ Line re-acquired!");
+  stopMotors(); // re-aligned with line
 }
