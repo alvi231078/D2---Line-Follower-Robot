@@ -36,22 +36,21 @@
 - Replace delays with **non-blocking state machines**
 - Add **Bluetooth remote override** or **autonomous mapping**
 
----
-
-## 🎬 Demo
-
-> Add a video or photo of your robot in action!
 
 ---
 
 ## 🧠 Author
 
-**Md Jubair Salehin**  
+**Md Ratul Ahmed Alvi**  
+Electronics Engineering Student  
+University of Applied Sciences Hamm-Lippstadt
+**Md Jubair Salehin Razin**  
+Electronics Engineering Student  
+University of Applied Sciences Hamm-Lippstadt
+**Faysal Ahmed Tonmoy**  
+Electronics Engineering Student  
+University of Applied Sciences Hamm-Lippstadt
+**Mahin**  
 Electronics Engineering Student  
 University of Applied Sciences Hamm-Lippstadt
 
----
-
-## 📜 License
-
-This project is open-source under the [MIT License](https://choosealicense.com/licenses/mit/).
