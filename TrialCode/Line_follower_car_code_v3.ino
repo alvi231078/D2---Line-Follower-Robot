@@ -1,78 +1,70 @@
 // Motor pins
-#define enA 5
-#define in1 6
-#define in2 7
-#define in3 9
-#define in4 10
-#define enB 8
+#define motorPin1 9
+#define motorPin2 10
+#define motorPin3 5
+#define motorPin4 6
 
-// Sensor pins
-#define R_S 4
-#define L_S 2
+// Ultrasonic pins
+#define TRIG_PIN 7
+#define ECHO_PIN 8
 
 void setup() {
-  // Motor pins as output
-  pinMode(enA, OUTPUT);
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
-  pinMode(in3, OUTPUT);
-  pinMode(in4, OUTPUT);
-  pinMode(enB, OUTPUT);
+  // Motor setup
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(motorPin3, OUTPUT);
+  pinMode(motorPin4, OUTPUT);
 
-  // Sensor pins as input
-  pinMode(R_S, INPUT);
-  pinMode(L_S, INPUT);
+  // Sensor setup
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
 
-  // Enable motors
-  digitalWrite(enA, HIGH);
-  digitalWrite(enB, HIGH);
+  Serial.begin(9600); // Serial monitor
+
+  // Test motors
+  moveForward();
+  delay(2000);
+  stopMotors();
 }
 
 void loop() {
-  // Read sensors
-  int right = digitalRead(R_S);
-  int left = digitalRead(L_S);
+  long distance = getDistance(); // Read distance
+  
+  Serial.print("Distance: ");
+  Serial.println(distance);
 
-  // Decide movement
-  if (right == 0 && left == 0) {
-    forward();
-  } 
-  else if (right == 1 && left == 0) {
-    turnRight();
-  } 
-  else if (right == 0 && left == 1) {
-    turnLeft();
-  } 
-  else {
-    stopMotors();
+  if (distance < 50.8) {
+    stopMotors();   // Too close, stop
+  } else {
+    moveForward();  // Safe, keep going
   }
 }
 
-void forward() {
-  digitalWrite(in1, HIGH);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, HIGH);
+// Get distance from ultrasonic (in cm)
+long getDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  return duration * 0.034 / 2;
 }
 
-void turnRight() {
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, HIGH);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, HIGH);
+// Go forward
+void moveForward() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  digitalWrite(motorPin3, HIGH);
+  digitalWrite(motorPin4, LOW);
 }
 
-void turnLeft() {
-  digitalWrite(in1, HIGH);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, HIGH);
-  digitalWrite(in4, LOW);
-}
-
+// Stop all motors
 void stopMotors() {
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, LOW);
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  digitalWrite(motorPin3, LOW);
+  digitalWrite(motorPin4, LOW);
 }
-
