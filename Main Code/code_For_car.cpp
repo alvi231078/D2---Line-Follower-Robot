@@ -14,13 +14,12 @@ const int ULTRASONIC_ECHO = 8;
 const int IR_SENSOR_LEFT  = 2;
 const int IR_SENSOR_RIGHT = 3;
 
-// ========== Thresholds ==========
 
 const int DISTANCE_THRESHOLD_CM = 30;
 const unsigned long MAX_RECOVERY_TIME = 3000;  // 3 seconds
 const unsigned long MAX_AVOID_TIME = 5000;     // 5 seconds
 
-// ========== Setup ==========
+
 
 void setup() {
   pinMode(MOTOR_LEFT_FORWARD, OUTPUT);
