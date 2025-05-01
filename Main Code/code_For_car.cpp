@@ -91,6 +91,7 @@ void moveForward() {
   digitalWrite(MOTOR_RIGHT_FWD, HIGH);
   digitalWrite(MOTOR_RIGHT_BWD, LOW);
 }
+/// Move forward
 
 void stopMotors() {
   digitalWrite(MOTOR_LEFT_FWD, LOW);
@@ -98,7 +99,7 @@ void stopMotors() {
   digitalWrite(MOTOR_RIGHT_FWD, LOW);
   digitalWrite(MOTOR_RIGHT_BWD, LOW);
 }
-
+    /// Stop all motors
 void turnLeft() {
   digitalWrite(MOTOR_LEFT_FWD, LOW);
   digitalWrite(MOTOR_LEFT_BWD, HIGH);
