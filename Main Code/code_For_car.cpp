@@ -145,7 +145,7 @@ void avoidObstacle() {
 void recoverLine() {
   stopMotors();
   delay(100);
-
+  // Serial.println("🌀 Attempting to recover line.");
   // Spin in place
   digitalWrite(MOTOR_LEFT_FWD, HIGH);
   digitalWrite(MOTOR_LEFT_BWD, LOW);
