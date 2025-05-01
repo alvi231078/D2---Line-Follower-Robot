@@ -51,6 +51,3 @@ When an object is detected within **30 cm** using an ultrasonic sensor:
 
 ---
 
-## 📎 Final Notes
-
-This project is a fusion of **practical embedded systems**, **real-time sensing**, and **autonomous logic**—crafted with clarity and purpose for students, makers, and future robotics engineers.
