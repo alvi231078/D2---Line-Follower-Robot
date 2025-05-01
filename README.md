@@ -1,5 +1,5 @@
 
-# 🤖 Intelligent Line Follower & Obstacle Avoidance Robot
+#  Intelligent Line Follower & Obstacle Avoidance Robot
 
 ## 🚦 System Overview
 
