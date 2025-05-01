@@ -168,3 +168,5 @@ void recoverLine() {
 }
 // This code is designed to control a line-following robot with obstacle avoidance capabilities.
 // It uses two IR sensors to follow a line and an ultrasonic sensor to detect obstacles.
+// The robot can adjust its path based on sensor input and will attempt to avoid obstacles by turning and moving forward.
+// The code includes functions for reading sensor values, moving the motors, and handling obstacle avoidance.
