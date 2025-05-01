@@ -1,79 +1,92 @@
-// ==== Pin Configuration ====
-const int MOTOR_LEFT_FWD     = 9;
-const int MOTOR_LEFT_BWD     = 10;
-const int MOTOR_RIGHT_FWD    = 5;
-const int MOTOR_RIGHT_BWD    = 6;
+// ========== Pin Definitions ==========
 
-const int ULTRASONIC_TRIG    = 7;
-const int ULTRASONIC_ECHO    = 8;
+// Motor control pins
+const int MOTOR_LEFT_FORWARD  = 9;
+const int MOTOR_LEFT_BACKWARD = 10;
+const int MOTOR_RIGHT_FORWARD = 5;
+const int MOTOR_RIGHT_BACKWARD = 6;
 
-const int IR_SENSOR_LEFT     = 2;
-const int IR_SENSOR_RIGHT    = 3;
+// Ultrasonic sensor pins
+const int ULTRASONIC_TRIG = 7;
+const int ULTRASONIC_ECHO = 8;
 
-// ==== Constants ====
-const int OBSTACLE_THRESHOLD_CM = 30;
-const unsigned long RECOVERY_LIMIT_MS = 3000;
-const unsigned long AVOID_LIMIT_MS    = 5000;
+// IR sensor pins
+const int IR_SENSOR_LEFT  = 2;
+const int IR_SENSOR_RIGHT = 3;
+
+// ========== Thresholds ==========
+
+const int DISTANCE_THRESHOLD_CM = 30;
+const unsigned long MAX_RECOVERY_TIME = 3000;  // 3 seconds
+const unsigned long MAX_AVOID_TIME = 5000;     // 5 seconds
+
+// ========== Setup ==========
 
 void setup() {
-  // Motor setup
-  pinMode(MOTOR_LEFT_FWD, OUTPUT);
-  pinMode(MOTOR_LEFT_BWD, OUTPUT);
-  pinMode(MOTOR_RIGHT_FWD, OUTPUT);
-  pinMode(MOTOR_RIGHT_BWD, OUTPUT);
+  pinMode(MOTOR_LEFT_FORWARD, OUTPUT);
+  pinMode(MOTOR_LEFT_BACKWARD, OUTPUT);
+  pinMode(MOTOR_RIGHT_FORWARD, OUTPUT);
+  pinMode(MOTOR_RIGHT_BACKWARD, OUTPUT);
 
-  // Sensor setup
   pinMode(ULTRASONIC_TRIG, OUTPUT);
   pinMode(ULTRASONIC_ECHO, INPUT);
+
   pinMode(IR_SENSOR_LEFT, INPUT);
   pinMode(IR_SENSOR_RIGHT, INPUT);
 
   Serial.begin(9600);
 }
 
+// ========== Main Loop ==========
+
 void loop() {
-  long dist = measureDistance();
-  bool leftDetected  = digitalRead(IR_SENSOR_LEFT);
-  bool rightDetected = digitalRead(IR_SENSOR_RIGHT);
+  long distance = readUltrasonicDistance();
+  bool isLeftWhite  = digitalRead(IR_SENSOR_LEFT);
+  bool isRightWhite = digitalRead(IR_SENSOR_RIGHT);
 
-  printSensorData(dist, leftDetected, rightDetected);
+  printSensorStatus(distance, isLeftWhite, isRightWhite);
 
-  if (dist < OBSTACLE_THRESHOLD_CM) {
-    Serial.println("⚠️ Obstacle detected.");
+  if (distance < DISTANCE_THRESHOLD_CM) {
+    Serial.println("⚠️ Obstacle too close! Trying to avoid...");
     avoidObstacle();
     return;
   }
 
-  if (!leftDetected && !rightDetected) {
-    Serial.println("✅ Forward movement.");
+  if (!isLeftWhite && !isRightWhite) {
+    Serial.println("✅ Path is clear — moving forward.");
     moveForward();
-  } else if (!leftDetected && rightDetected) {
-    Serial.println("↪ Turning left.");
+  }
+  else if (!isLeftWhite && isRightWhite) {
+    Serial.println("↪ Adjusting — turning left.");
     turnLeft();
-  } else if (leftDetected && !rightDetected) {
-    Serial.println("↩ Turning right.");
+  }
+  else if (isLeftWhite && !isRightWhite) {
+    Serial.println("↩ Adjusting — turning right.");
     turnRight();
-  } else {
-    Serial.println("🌀 Line lost — recovering.");
+  }
+  else {
+    Serial.println("❓ Line lost — recovering...");
     recoverLine();
   }
 
-  delay(100);
+  delay(100); // small delay to stabilize reading
 }
 
-// ==== Sensor Functions ====
-long measureDistance() {
+// ========== Sensor Functions ==========
+
+long readUltrasonicDistance() {
   digitalWrite(ULTRASONIC_TRIG, LOW);
   delayMicroseconds(2);
   digitalWrite(ULTRASONIC_TRIG, HIGH);
   delayMicroseconds(10);
   digitalWrite(ULTRASONIC_TRIG, LOW);
 
-  long duration = pulseIn(ULTRASONIC_ECHO, HIGH, 20000);
-  return (duration == 0) ? 999 : duration * 0.034 / 2;
+  long duration = pulseIn(ULTRASONIC_ECHO, HIGH, 20000);  // 20 ms timeout
+  if (duration == 0) return 999;                          // if no signal return max
+  return duration * 0.034 / 2;                            // convert to cm
 }
 
-void printSensorData(long distance, bool left, bool right) {
+void printSensorStatus(long distance, bool left, bool right) {
   Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
@@ -84,60 +97,61 @@ void printSensorData(long distance, bool left, bool right) {
   Serial.println(right ? "WHITE" : "BLACK");
 }
 
-// ==== Motion Functions ====
+// ========== Motor Control Functions ==========
+
 void moveForward() {
-  digitalWrite(MOTOR_LEFT_FWD, HIGH);
-  digitalWrite(MOTOR_LEFT_BWD, LOW);
-  digitalWrite(MOTOR_RIGHT_FWD, HIGH);
-  digitalWrite(MOTOR_RIGHT_BWD, LOW);
+  digitalWrite(MOTOR_LEFT_FORWARD, HIGH);
+  digitalWrite(MOTOR_LEFT_BACKWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_FORWARD, HIGH);
+  digitalWrite(MOTOR_RIGHT_BACKWARD, LOW);
 }
-/// Move forward
 
 void stopMotors() {
-  digitalWrite(MOTOR_LEFT_FWD, LOW);
-  digitalWrite(MOTOR_LEFT_BWD, LOW);
-  digitalWrite(MOTOR_RIGHT_FWD, LOW);
-  digitalWrite(MOTOR_RIGHT_BWD, LOW);
+  digitalWrite(MOTOR_LEFT_FORWARD, LOW);
+  digitalWrite(MOTOR_LEFT_BACKWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_FORWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_BACKWARD, LOW);
 }
-    /// Stop all motors
+
 void turnLeft() {
-  digitalWrite(MOTOR_LEFT_FWD, LOW);
-  digitalWrite(MOTOR_LEFT_BWD, HIGH);
-  digitalWrite(MOTOR_RIGHT_FWD, HIGH);
-  digitalWrite(MOTOR_RIGHT_BWD, LOW);
+  digitalWrite(MOTOR_LEFT_FORWARD, LOW);
+  digitalWrite(MOTOR_LEFT_BACKWARD, HIGH);
+  digitalWrite(MOTOR_RIGHT_FORWARD, HIGH);
+  digitalWrite(MOTOR_RIGHT_BACKWARD, LOW);
 }
 
 void turnRight() {
-  digitalWrite(MOTOR_LEFT_FWD, HIGH);
-  digitalWrite(MOTOR_LEFT_BWD, LOW);
-  digitalWrite(MOTOR_RIGHT_FWD, LOW);
-  digitalWrite(MOTOR_RIGHT_BWD, HIGH);
+  digitalWrite(MOTOR_LEFT_FORWARD, HIGH);
+  digitalWrite(MOTOR_LEFT_BACKWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_FORWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_BACKWARD, HIGH);
 }
 
-// ==== Behavior Functions ====
+// ========== Behavior Logic ==========
+
 void avoidObstacle() {
-  unsigned long start = millis();
-//  Serial.println("🚧 Avoiding obstacle.");
+  unsigned long avoidStart = millis();
+
   turnRight();
-  delay(400);
+  delay(400);  // quick rotation
 
   moveForward();
   unsigned long forwardStart = millis();
   while (millis() - forwardStart < 1200) {
-    if (measureDistance() > OBSTACLE_THRESHOLD_CM + 10) break;
+    if (readUltrasonicDistance() > DISTANCE_THRESHOLD_CM + 10) break;
     delay(50);
   }
 
   turnLeft();
-  delay(400);
+  delay(400);  // face forward
 
   moveForward();
-  delay(500);
-//  Serial.println("🔄 Attempting to recover line.");
-  recoverLine();
+  delay(500);  // final alignment
 
-  if (millis() - start > AVOID_LIMIT_MS) {
-    Serial.println("❌ Timeout — forcing forward.");
+  recoverLine();  // try to get back on track
+
+  if (millis() - avoidStart > MAX_AVOID_TIME) {
+    Serial.println("❌ Couldn’t avoid in time — forcing forward.");
     moveForward();
     delay(1000);
   }
@@ -146,17 +160,17 @@ void avoidObstacle() {
 void recoverLine() {
   stopMotors();
   delay(100);
-  // Serial.println("🌀 Attempting to recover line.");
-  // Spin in place
-  digitalWrite(MOTOR_LEFT_FWD, HIGH);
-  digitalWrite(MOTOR_LEFT_BWD, LOW);
-  digitalWrite(MOTOR_RIGHT_FWD, LOW);
-  digitalWrite(MOTOR_RIGHT_BWD, HIGH);
 
-  unsigned long recoveryStart = millis();
+  // Spin clockwise
+  digitalWrite(MOTOR_LEFT_FORWARD, HIGH);
+  digitalWrite(MOTOR_LEFT_BACKWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_FORWARD, LOW);
+  digitalWrite(MOTOR_RIGHT_BACKWARD, HIGH);
+
+  unsigned long spinStart = millis();
   while (digitalRead(IR_SENSOR_LEFT) == HIGH && digitalRead(IR_SENSOR_RIGHT) == HIGH) {
-    if (millis() - recoveryStart > RECOVERY_LIMIT_MS) {
-      Serial.println("❌ Recovery failed.");
+    if (millis() - spinStart > MAX_RECOVERY_TIME) {
+      Serial.println("❌ Gave up recovering the line.");
       stopMotors();
       return;
     }
@@ -164,5 +178,5 @@ void recoverLine() {
   }
 
   stopMotors();
-  Serial.println("✅ Line recovered.");
+  Serial.println("✅ Line found again.");
 }
