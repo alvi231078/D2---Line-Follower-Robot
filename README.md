@@ -33,7 +33,7 @@ When an object is detected within **30 cm** using an ultrasonic sensor:
 
 ## ⚙️ Key Features
 
-- 🧠 **Human-Readable Logic** – Intuitive decision-making structure  
+
 - ⏱️ **Non-Blocking Timers** – Efficient use of `millis()` for delay-free recovery  
 - 🪛 **Debug with Ease** – Real-time diagnostics via `Serial Monitor`  
 - 📦 **Modular Codebase** – Clear, reusable, and well-documented functions  
