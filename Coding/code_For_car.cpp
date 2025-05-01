@@ -13,55 +13,46 @@
 #define IR_RIGHT 3
 
 void setup() {
-  // Motor pins
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
   pinMode(motorPin3, OUTPUT);
   pinMode(motorPin4, OUTPUT);
 
-  // Ultrasonic
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
-  // IR sensors
   pinMode(IR_LEFT, INPUT);
   pinMode(IR_RIGHT, INPUT);
 }
 
 void loop() {
-  // Distance sensor (optional, can disable if not needed)
   long distance = getDistance();
   if (distance < 30) {
     stopMotors(); // obstacle too close
     return;
   }
 
-  // Read IR sensors
-  bool leftIR = digitalRead(IR_LEFT);   // HIGH = white, LOW = black
+  bool leftIR = digitalRead(IR_LEFT);   // HIGH = white
   bool rightIR = digitalRead(IR_RIGHT);
 
-  // Core line following logic
   if (!leftIR && !rightIR) {
-    // Both on black – go straight
-    moveForward();
+    moveForward(); // both on line
   }
   else if (!leftIR && rightIR) {
-    // Left sees line – turn left
-    turnLeft();
+    turnLeft(); // right drift, correct left
   }
   else if (leftIR && !rightIR) {
-    // Right sees line – turn right
-    turnRight();
+    turnRight(); // left drift, correct right
   }
   else {
-    // Both on white – line lost, recover
+    // Both sensors see white: robot lost the line
     recoverLine();
   }
 
-  delay(10); // small delay for smoother behavior
+  delay(10); // smooth loop
 }
 
-// Distance reading with ultrasonic sensor
+// Distance in cm using ultrasonic
 long getDistance() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
@@ -73,7 +64,7 @@ long getDistance() {
   return duration * 0.034 / 2;
 }
 
-// Motor movement functions
+// Movement functions
 void moveForward() {
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
@@ -102,17 +93,27 @@ void turnRight() {
   digitalWrite(motorPin4, HIGH);
 }
 
-// Try to find the line again by spinning right slowly
+// Improved recovery routine when line is lost
 void recoverLine() {
-  // Spin right slowly until either sensor sees line again
+  stopMotors();
+  delay(100);
+
+  // Step 1: reverse slightly
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, HIGH);
+  digitalWrite(motorPin3, LOW);
+  digitalWrite(motorPin4, HIGH);
+  delay(250);
+
+  // Step 2: spin slowly until line is found again
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
   digitalWrite(motorPin4, HIGH);
 
   while (digitalRead(IR_LEFT) == HIGH && digitalRead(IR_RIGHT) == HIGH) {
-    delay(10); // short pause
+    delay(10);
   }
 
-  stopMotors(); // re-aligned with line
+  stopMotors();
 }
