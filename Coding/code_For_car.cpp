@@ -7,19 +7,20 @@ const int enablePin = 10;
 const int trigPin = 6;
 const int echoPin = 7;
 
-// Warning indicators
+// Alerts
 const int buzzerPin = 4;
 const int ledPin = 5;
 
-// IR sensor pins
+// IR sensors (line follower)
 const int irLeftPin = 2;
 const int irRightPin = 3;
 
-// Motor speeds
+// Speeds
 const int forwardSpeed = 180;
-const int reverseSpeed = 160;
+const int turnSpeed = 140;
+const int reverseSpeed = 120;
 
-// Obstacle threshold (cm)
+// Obstacle distance threshold
 const int distanceThreshold = 15;
 
 void setup() {
@@ -27,23 +28,21 @@ void setup() {
   setupSensorPins();
   setupWarningPins();
   setupIRPins();
-
   Serial.begin(9600);
 }
 
 void loop() {
-  int distance = getDistance();                    // ultrasonic
-  bool irLeft = digitalRead(irLeftPin) == LOW;     // obstacle on left?
-  bool irRight = digitalRead(irRightPin) == LOW;   // obstacle on right?
+  int distance = getDistance();
+  bool irLeft = digitalRead(irLeftPin) == LOW;
+  bool irRight = digitalRead(irRightPin) == LOW;
 
   showDistance(distance);
   showIRSensors(irLeft, irRight);
 
-  controlNavigation(distance, irLeft, irRight);     // new full control
-  delay(200); // reduced for quicker response
+  controlNavigation(distance, irLeft, irRight);
+  delay(100);
 }
 
-// Setup functions
 void setupMotorPins() {
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
@@ -65,82 +64,92 @@ void setupIRPins() {
   pinMode(irRightPin, INPUT);
 }
 
-// Read distance from ultrasonic
 int getDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
-
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-
   long duration = pulseIn(echoPin, HIGH);
-  int distance = duration * 0.034 / 2;
-  return distance;
+  return duration * 0.034 / 2;
 }
 
-// Serial debug: distance
 void showDistance(int distance) {
   Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
 }
 
-// Serial debug: IR sensors
 void showIRSensors(bool leftDetected, bool rightDetected) {
   Serial.print("IR Left: ");
-  Serial.print(leftDetected ? "DETECTED" : "CLEAR");
+  Serial.print(leftDetected ? "LINE" : "WHITE");
   Serial.print(" | IR Right: ");
-  Serial.println(rightDetected ? "DETECTED" : "CLEAR");
+  Serial.println(rightDetected ? "LINE" : "WHITE");
 }
 
-// Main control logic with IR + ultrasonic
 void controlNavigation(int distance, bool irLeft, bool irRight) {
   if (distance <= distanceThreshold) {
     stopMotor();
-    startWarning();  // object ahead!
+    startWarning();
     return;
   }
 
-  stopWarning(); // ultrasonic clear
+  stopWarning(); // no object ahead
 
   if (irLeft && irRight) {
-    stopMotor();  // both sides blocked
-  } else if (irLeft) {
-    turnRight();  // only left sensor blocked
-  } else if (irRight) {
-    turnLeft();   // only right sensor blocked
+    moveForward(); // both on line
+  } else if (irLeft && !irRight) {
+    turnLeft(); // adjust left
+  } else if (!irLeft && irRight) {
+    turnRight(); // adjust right
   } else {
-    moveForward();  // nothing detected
+    // both see white – robot is off the line
+    stopMotor();
+    delay(150);        // pause to think
+    moveBackward();    // back off a little
+    delay(300);
+    spinRight();       // try to recover by spinning
+    delay(400);
+    stopMotor();       // pause again
   }
 }
 
-// Motor behaviors
+// Drive logic
 void moveForward() {
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   analogWrite(enablePin, forwardSpeed);
 }
 
-void stopMotor() {
-  analogWrite(enablePin, 0);
+void turnLeft() {
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, HIGH);
+  analogWrite(enablePin, turnSpeed);
 }
 
-void turnLeft() {
-  // reverse one side to turn left (quick and dirty)
+void turnRight() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  analogWrite(enablePin, turnSpeed);
+}
+
+void moveBackward() {
   digitalWrite(motorPin1, LOW);
   digitalWrite(motorPin2, HIGH);
   analogWrite(enablePin, reverseSpeed);
 }
 
-void turnRight() {
-  // standard forward turn logic (same as left but flipped)
+void spinRight() {
+  // pulse spin to re-find the line
   digitalWrite(motorPin1, HIGH);
-  digitalWrite(motorPin2, LOW);
-  analogWrite(enablePin, reverseSpeed);
+  digitalWrite(motorPin2, HIGH); // both high = spin on some motor drivers
+  analogWrite(enablePin, turnSpeed);
 }
 
-// Warnings
+void stopMotor() {
+  analogWrite(enablePin, 0);
+}
+
 void startWarning() {
   digitalWrite(buzzerPin, HIGH);
   digitalWrite(ledPin, HIGH);
