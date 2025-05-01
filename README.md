@@ -20,7 +20,7 @@ This autonomous robot is designed for seamless **line tracking** and **obstacle 
 
 ---
 
-## 🚧 Obstacle Avoidance Protocol
+##  Obstacle Avoidance Protocol
 
 When an object is detected within **30 cm** using an ultrasonic sensor:
 
