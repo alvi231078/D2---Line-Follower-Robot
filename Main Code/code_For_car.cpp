@@ -13,6 +13,8 @@
 #define IR_RIGHT 3
 
 // some safe values. don't know why 30 but it works ok
+
+
 #define OBSTACLE_DISTANCE_THRESHOLD 30   // distance in cm I guess??
 #define RECOVERY_TIMEOUT 3000            // 3 sec recovery time
 #define AVOID_TIMEOUT 5000               // timeout for obstacle avoid... 5 sec
@@ -32,7 +34,7 @@ void setup() {
   pinMode(IR_LEFT, INPUT);
   pinMode(IR_RIGHT, INPUT);
 
-  Serial.begin(9600); // hope this baud rate is ok
+  Serial.begin(9600); // hope this   baud rate is ok
 }
 
 void loop() {
@@ -60,15 +62,15 @@ void loop() {
     moveForward();
   }
   else if (!leftIR && rightIR) {
-    Serial.println("↪️ drifting? try going left.\n");
+    Serial.println("↪ drifting? try going left.\n");
     turnLeft();
   }
   else if (leftIR && !rightIR) {
-    Serial.println("↩️ oops, maybe right turn is needed.\n");
+    Serial.println("↩ oops, maybe right turn is needed.\n");
     turnRight();
   }
   else {
-    Serial.println("🚫 ehhh where’s the line? searching...\n");
+    Serial.println(" ehhh where’s the line? searching...\n");
     recoverLine();
   }
 
