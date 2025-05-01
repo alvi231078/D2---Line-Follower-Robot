@@ -9,7 +9,7 @@ This document explains each section of the Arduino code used for an intelligent 
 
 ---
 
-## 🔧 Pin Definitions
+## 🔧 Pin Definitions for car
 
 ```cpp
 #define motorPin1 9
