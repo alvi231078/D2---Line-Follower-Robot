@@ -1,0 +1,101 @@
+ Line Follower Robot Code Explanation
+
+This Arduino code is for a simple **autonomous line follower robot** using two IR sensors and two DC motors.
+
+
+
+**Pin Configuration**
+
+cpp
+#define enA 5    // Motor A enable (PWM)
+#define in1 6    // Motor A input 1
+#define in2 7    // Motor A input 2
+#define in3 9    // Motor B input 1
+#define in4 10   // Motor B input 2
+#define enB 8    // Motor B enable (PWM)
+
+#define R_S 4    // Right IR sensor
+#define L_S 2    // Left IR sensor
+
+
+- `enA`, `enB`: Control motor speed (if PWM is used).
+- `in1`, `in2`, `in3`, `in4`: Control direction of Motor A and B.
+- `R_S`, `L_S`: Receive digital signals (0 or 1) from right and left sensors respectively.
+
+
+
+**Setup Function**
+
+cpp
+void setup() {
+  // Define pin modes
+  pinMode(enA, OUTPUT); pinMode(enB, OUTPUT);
+  pinMode(in1, OUTPUT); pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT); pinMode(in4, OUTPUT);
+
+  pinMode(R_S, INPUT); pinMode(L_S, INPUT);
+
+  // Start motors
+  digitalWrite(enA, HIGH);
+  digitalWrite(enB, HIGH);
+}
+
+
+- Sets motor pins as outputs and IR sensor pins as inputs.
+- Motors are enabled by setting `enA` and `enB` to HIGH.
+
+
+**Loop Function**
+
+Continuously checks sensor input and takes action based on it.
+
+cpp
+int right = digitalRead(R_S);
+int left = digitalRead(L_S);
+
+| Sensor State | Action        | Description                        |
+|--------------|---------------|------------------------------------|
+| `right=0`, `left=0` | `forward()`   | Both sensors detect line → go straight |
+| `right=1`, `left=0` | `turnRight()` | Right sensor off line → turn right    |
+| `right=0`, `left=1` | `turnLeft()`  | Left sensor off line → turn left      |
+| `right=1`, `left=1` | `stopMotors()`| Both sensors off → stop               |
+
+
+**Motor Control Functions**
+
+**Forward movement**:
+cpp
+digitalWrite(in1, HIGH);
+digitalWrite(in2, LOW);
+digitalWrite(in3, LOW);
+digitalWrite(in4, HIGH);
+
+Left motor forward, right motor forward.
+
+**Turn Right**:
+cpp
+digitalWrite(in1, LOW);
+digitalWrite(in2, HIGH); // Left motor reverse
+digitalWrite(in3, LOW);
+digitalWrite(in4, HIGH); // Right motor forward
+
+
+**Turn Left**:
+cpp
+digitalWrite(in1, HIGH);
+digitalWrite(in2, LOW);  // Left motor forward
+digitalWrite(in3, HIGH);
+digitalWrite(in4, LOW);  // Right motor reverse
+
+
+**Stop**:
+cpp
+digitalWrite(in1, LOW); digitalWrite(in2, LOW);
+digitalWrite(in3, LOW); digitalWrite(in4, LOW);
+
+
+ Summary
+
+- This code allows the robot to follow a black line using two IR sensors.
+- It decides direction based on which sensor detects the line.
+- Behavior: Straight when both detect → Adjust if only one → Stop if lost.
