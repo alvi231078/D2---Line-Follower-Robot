@@ -176,7 +176,7 @@ void recoverLine() {
     }
     delay(20);
   }
-
+// Spin until one sensor sees the line
   stopMotors();
   Serial.println("✅ Line found again.");
 }
