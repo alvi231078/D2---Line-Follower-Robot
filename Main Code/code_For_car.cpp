@@ -30,26 +30,22 @@ void setup() {
 void loop() {
   long distance = getDistance();
 
-  // IR sensor readings
   bool leftIR = digitalRead(IR_LEFT);   // HIGH = white, LOW = black
   bool rightIR = digitalRead(IR_RIGHT);
 
-  // Debug print – distance
   Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
 
-  // Debug print – IR status
   Serial.print("IR Left: ");
   Serial.print(leftIR ? "WHITE" : "BLACK");
   Serial.print(" | IR Right: ");
   Serial.println(rightIR ? "WHITE" : "BLACK");
 
-  // Obstacle handling
+  // Obstacle detected? Do full bypass
   if (distance < 30) {
-    Serial.println("⚠️ Obstacle detected! Stopping.\n");
-    stopMotors();
-    delay(500);
+    Serial.println("⚠️ Obstacle detected! Executing bypass maneuver...\n");
+    avoidObstacle();
     return;
   }
 
@@ -71,7 +67,7 @@ void loop() {
     recoverLine();
   }
 
-  delay(150); // control loop frequency
+  delay(150);
 }
 
 // Ultrasonic distance in cm
@@ -114,19 +110,34 @@ void turnRight() {
   digitalWrite(motorPin4, HIGH);
 }
 
+// Bypass obstacle and re-enter the line
+void avoidObstacle() {
+  // Step 1: Turn right to leave the line
+  turnRight();
+  delay(400);
+
+  // Step 2: Drive forward to pass obstacle
+  moveForward();
+  delay(800);
+
+  // Step 3: Turn left to align with the line again
+  turnLeft();
+  delay(400);
+
+  // Step 4: Move forward and try to reacquire line
+  moveForward();
+  delay(600);
+
+  // Step 5: Try to find the line again
+  recoverLine();
+}
+
 // Line recovery
 void recoverLine() {
   stopMotors();
   delay(100);
 
-  // Reverse slightly
-  digitalWrite(motorPin1, LOW);
-  digitalWrite(motorPin2, HIGH);
-  digitalWrite(motorPin3, LOW);
-  digitalWrite(motorPin4, HIGH);
-  delay(250);
-
-  // Spin right to search for line
+  // Spin slowly until one sensor sees line
   digitalWrite(motorPin1, HIGH);
   digitalWrite(motorPin2, LOW);
   digitalWrite(motorPin3, LOW);
