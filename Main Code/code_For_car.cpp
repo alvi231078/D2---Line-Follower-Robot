@@ -33,12 +33,12 @@ void setup() {
 
   pinMode(IR_SENSOR_LEFT, INPUT);
   pinMode(IR_SENSOR_RIGHT, INPUT);
-    // Initialize motors to stop
+
   Serial.begin(9600);
 }
 
 // ========== Main Loop ==========
-// This is where the main logic of the robot will run
+
 void loop() {
   long distance = readUltrasonicDistance();
   bool isLeftWhite  = digitalRead(IR_SENSOR_LEFT);
@@ -176,7 +176,7 @@ void recoverLine() {
     }
     delay(20);
   }
-// Spin until one sensor sees the line
+
   stopMotors();
   Serial.println("✅ Line found again.");
 }
