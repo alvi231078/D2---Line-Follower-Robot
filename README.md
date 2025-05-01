@@ -1,11 +1,7 @@
 
 #  Intelligent Line Follower & Obstacle Avoidance Robot
 
-##  System Overview
 
-This autonomous robot is designed for seamless **line tracking** and **obstacle avoidance**. It combines smart logic, modular code, and real-time feedback to perform reliable navigation in dynamic environments.
-
----
 
 ## 🛣 Line Following Logic
 
