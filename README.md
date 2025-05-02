@@ -1,5 +1,5 @@
 
-# Intelligent Line Follower & Obstacle Avoidance Robot
+# Intelligent Line Follower & Obstacle Color detector and Avoidance Robot
 
 This robot uses IR sensors to follow a line, an ultrasonic sensor to detect obstacles, and a TCS3200 color sensor to detect colored zones (red, green, blue). If the color sensor is not connected, the robot will still function using IR and ultrasonic and IR sensors.
 
