@@ -20,7 +20,7 @@ This robot uses IR sensors to follow a line, an ultrasonic sensor to detect obst
 
 ## 🚧 Obstacle Avoidance Protocol
 
-When an object is detected within **30 cm** using an ultrasonic sensor:
+When an object is detected within **30-cm** using an ultrasonic sensor:
 
 1. ➤ **Right Turn** – Exit the line path
 2. ➤ **Forward Motion** – Navigate alongside the obstacle
