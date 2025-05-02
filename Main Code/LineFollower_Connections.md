@@ -54,6 +54,6 @@ This robot uses IR sensors to follow a line, an ultrasonic sensor to detect obst
 ## ✅ Notes
 
 - If the color sensor is not connected or returns noisy readings, the robot ignores it.
-- You can customize actions for each color in the code.
-- Use `Serial Monitor` (9600 baud) to view sensor readings and debug.
+- We can customize actions for each color in the code.
+- SEE `Serial Monitor` (9600 baud) to view sensor readings and debug.
 
