@@ -20,35 +20,33 @@ const int S2 = A1;
 const int S3 = A2;
 const int sensorOut = A3;
 
-// === Thresholds ===
+// === Thresholds and Timers ===
 const int obstacleThreshold = 30; // cm
 const long recoveryTimeout = 3000;
 const long avoidTimeout = 5000;
+const unsigned long stuckTimeout = 4000; // ms
 
-// === Setup ===
+// === State Tracking ===
+unsigned long lastMoveTime = 0;
+bool wasMoving = false;
+
 void setup() {
-  // Motors
   pinMode(motorL1, OUTPUT); pinMode(motorL2, OUTPUT);
   pinMode(motorR1, OUTPUT); pinMode(motorR2, OUTPUT);
 
-  // IR
   pinMode(irLeft, INPUT); pinMode(irRight, INPUT);
 
-  // Ultrasonic
   pinMode(trigPin, OUTPUT); pinMode(echoPin, INPUT);
 
-  // Color sensor pins
   pinMode(S0, OUTPUT); pinMode(S1, OUTPUT);
   pinMode(S2, OUTPUT); pinMode(S3, OUTPUT);
   pinMode(sensorOut, INPUT);
 
-  // Set color sensor frequency scaling to 20%
-  digitalWrite(S0, HIGH); digitalWrite(S1, LOW);
+  digitalWrite(S0, HIGH); digitalWrite(S1, LOW); // 20% scaling
 
   Serial.begin(9600);
 }
 
-// === Loop ===
 void loop() {
   long distance = getDistanceCM();
   bool leftIR = isLineUnderSensor(irLeft);
@@ -57,7 +55,8 @@ void loop() {
 
   logStatus(distance, leftIR, rightIR, color);
 
-  // Color-based actions (if sensor is connected)
+  checkIfStuck(distance, leftIR, rightIR);
+
   if (color == "RED") {
     Serial.println("[COLOR] RED → Stopping");
     stopMotors();
@@ -75,23 +74,27 @@ void loop() {
     return;
   }
 
-  // Obstacle detection
   if (distance < obstacleThreshold) {
     Serial.println("[!] Obstacle detected. Avoiding...");
     avoidObstacle();
     return;
   }
 
-  // Line following
   if (!leftIR && !rightIR) {
     Serial.println("[✓] On line. Moving forward.");
     moveForward();
+    wasMoving = true;
+    lastMoveTime = millis();
   } else if (!leftIR && rightIR) {
     Serial.println("[→] Adjusting left.");
     turnLeft();
+    wasMoving = true;
+    lastMoveTime = millis();
   } else if (leftIR && !rightIR) {
     Serial.println("[←] Adjusting right.");
     turnRight();
+    wasMoving = true;
+    lastMoveTime = millis();
   } else {
     Serial.println("[X] Line lost. Recovering...");
     recoverLine();
@@ -100,7 +103,35 @@ void loop() {
   delay(100);
 }
 
-// === Movement Functions ===
+// === Self-Retraction if Stuck ===
+void checkIfStuck(long distance, bool leftIR, bool rightIR) {
+  static long lastDistance = 0;
+
+  if (wasMoving && !leftIR && !rightIR && abs(distance - lastDistance) < 3) {
+    if (millis() - lastMoveTime > stuckTimeout) {
+      Serial.println("[STUCK] No progress detected. Reversing...");
+
+      // Reverse motion
+      digitalWrite(motorL1, LOW);
+      analogWrite(motorL2, motorSpeed);
+      digitalWrite(motorR1, LOW);
+      analogWrite(motorR2, motorSpeed);
+      delay(1000);
+
+      stopMotors();
+      delay(300);
+
+      recoverLine();
+
+      wasMoving = false;
+      lastMoveTime = millis();
+    }
+  }
+
+  lastDistance = distance;
+}
+
+// === Movement ===
 void moveForward() {
   analogWrite(motorL1, motorSpeed);
   digitalWrite(motorL2, LOW);
@@ -129,7 +160,7 @@ void turnRight() {
   analogWrite(motorR2, motorSpeed);
 }
 
-// === Recovery and Avoidance ===
+// === Recovery ===
 void recoverLine() {
   stopMotors();
   delay(100);
@@ -153,6 +184,7 @@ void recoverLine() {
   Serial.println("[✓] Line recovered.");
 }
 
+// === Obstacle Avoidance ===
 void avoidObstacle() {
   unsigned long start = millis();
 
@@ -204,7 +236,6 @@ String readColor() {
   int green = readColorFrequency(HIGH, HIGH);
   int blue = readColorFrequency(LOW, HIGH);
 
-  // Basic check if sensor disconnected or noisy
   if (red > 3000 && green > 3000 && blue > 3000) return "UNKNOWN";
 
   Serial.print("R: "); Serial.print(red);
