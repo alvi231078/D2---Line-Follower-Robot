@@ -70,7 +70,6 @@ If the optional TCS3200 color sensor is connected, the robot also responds to co
 - **Arduino UNO** can be powered via USB or VIN pin from the same battery.
 - **IR, Ultrasonic, and Color Sensors** use 5V from the Arduino.
 
-> ⚠️ Make sure your motor driver or motor control circuit can handle the motor current load safely.
 
 ---
 
