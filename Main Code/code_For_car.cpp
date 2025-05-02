@@ -21,21 +21,21 @@ const int S3 = A2;
 const int sensorOut = A3;
 
 // === Thresholds and Timers ===
-const int obstacleThreshold = 30; // cm
+const int obstacleThreshold = 30;
 const long recoveryTimeout = 3000;
 const long avoidTimeout = 5000;
-const unsigned long stuckTimeout = 4000; // ms
+const unsigned long stuckTimeout = 4000;
 
-// === State Tracking ===
 unsigned long lastMoveTime = 0;
 bool wasMoving = false;
+int ultrasonicFailureCount = 0;
+int maxSensorFailures = 3;
 
 void setup() {
   pinMode(motorL1, OUTPUT); pinMode(motorL2, OUTPUT);
   pinMode(motorR1, OUTPUT); pinMode(motorR2, OUTPUT);
 
   pinMode(irLeft, INPUT); pinMode(irRight, INPUT);
-
   pinMode(trigPin, OUTPUT); pinMode(echoPin, INPUT);
 
   pinMode(S0, OUTPUT); pinMode(S1, OUTPUT);
@@ -49,14 +49,28 @@ void setup() {
 
 void loop() {
   long distance = getDistanceCM();
+  if (distance == -1) {
+    ultrasonicFailureCount++;
+    Serial.println("[ERROR] Ultrasonic sensor failed to respond.");
+    if (ultrasonicFailureCount >= maxSensorFailures) {
+      Serial.println("[CRITICAL] Too many ultrasonic failures. Stopping.");
+      stopMotors();
+      while (true);  // Hard stop
+    }
+    delay(200);
+    return;
+  } else {
+    ultrasonicFailureCount = 0;
+  }
+
   bool leftIR = isLineUnderSensor(irLeft);
   bool rightIR = isLineUnderSensor(irRight);
   String color = readColor();
 
   logStatus(distance, leftIR, rightIR, color);
-
   checkIfStuck(distance, leftIR, rightIR);
 
+  // Color-based logic
   if (color == "RED") {
     Serial.println("[COLOR] RED → Stopping");
     stopMotors();
@@ -74,12 +88,14 @@ void loop() {
     return;
   }
 
+  // Obstacle avoidance
   if (distance < obstacleThreshold) {
     Serial.println("[!] Obstacle detected. Avoiding...");
     avoidObstacle();
     return;
   }
 
+  // Line following logic
   if (!leftIR && !rightIR) {
     Serial.println("[✓] On line. Moving forward.");
     moveForward();
@@ -96,7 +112,7 @@ void loop() {
     wasMoving = true;
     lastMoveTime = millis();
   } else {
-    Serial.println("[X] Line lost. Recovering...");
+    Serial.println("[X] Line lost. Attempting recovery...");
     recoverLine();
   }
 
@@ -109,9 +125,8 @@ void checkIfStuck(long distance, bool leftIR, bool rightIR) {
 
   if (wasMoving && !leftIR && !rightIR && abs(distance - lastDistance) < 3) {
     if (millis() - lastMoveTime > stuckTimeout) {
-      Serial.println("[STUCK] No progress detected. Reversing...");
+      Serial.println("[STUCK] No progress. Reversing and recovering...");
 
-      // Reverse motion
       digitalWrite(motorL1, LOW);
       analogWrite(motorL2, motorSpeed);
       digitalWrite(motorR1, LOW);
@@ -120,7 +135,6 @@ void checkIfStuck(long distance, bool leftIR, bool rightIR) {
 
       stopMotors();
       delay(300);
-
       recoverLine();
 
       wasMoving = false;
@@ -173,7 +187,7 @@ void recoverLine() {
   unsigned long start = millis();
   while (!isLineUnderSensor(irLeft) && !isLineUnderSensor(irRight)) {
     if (millis() - start > recoveryTimeout) {
-      Serial.println("[-] Failed to recover line. Stopping.");
+      Serial.println("[FAIL] Recovery timeout. Stopping.");
       stopMotors();
       return;
     }
@@ -213,7 +227,7 @@ void avoidObstacle() {
   }
 }
 
-// === Sensor Functions ===
+// === Sensors ===
 long getDistanceCM() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -222,21 +236,28 @@ long getDistanceCM() {
   digitalWrite(trigPin, LOW);
 
   long duration = pulseIn(echoPin, HIGH, 20000);
-  if (duration == 0) return 999;
+  if (duration == 0) return -1; // Signal failed
   return duration * 0.034 / 2;
 }
 
 bool isLineUnderSensor(int pin) {
-  return digitalRead(pin) == LOW;
+  int val = digitalRead(pin);
+  if (val != HIGH && val != LOW) {
+    Serial.println("[ERROR] IR sensor read invalid.");
+    return false;
+  }
+  return val == LOW;
 }
 
-// === Color Sensor ===
 String readColor() {
   int red = readColorFrequency(LOW, LOW);
   int green = readColorFrequency(HIGH, HIGH);
   int blue = readColorFrequency(LOW, HIGH);
 
-  if (red > 3000 && green > 3000 && blue > 3000) return "UNKNOWN";
+  if (red < 0 || green < 0 || blue < 0) {
+    Serial.println("[ERROR] Color sensor failed.");
+    return "UNKNOWN";
+  }
 
   Serial.print("R: "); Serial.print(red);
   Serial.print(" G: "); Serial.print(green);
@@ -245,7 +266,6 @@ String readColor() {
   if (red < green && red < blue) return "RED";
   if (green < red && green < blue) return "GREEN";
   if (blue < red && blue < green) return "BLUE";
-
   return "UNKNOWN";
 }
 
@@ -253,10 +273,11 @@ int readColorFrequency(bool s2Val, bool s3Val) {
   digitalWrite(S2, s2Val);
   digitalWrite(S3, s3Val);
   delay(50);
-  return pulseIn(sensorOut, LOW);
+  long pulse = pulseIn(sensorOut, LOW, 50000); // 50 ms timeout
+  return (pulse == 0) ? -1 : pulse;
 }
 
-// === Logging ===
+// === Debugging ===
 void logStatus(long dist, bool left, bool right, String color) {
   Serial.print("Distance: ");
   Serial.print(dist);
