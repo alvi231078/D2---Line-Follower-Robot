@@ -94,8 +94,4 @@ digitalWrite(in1, LOW); digitalWrite(in2, LOW);
 digitalWrite(in3, LOW); digitalWrite(in4, LOW);
 
 
- Summary
-
-- This code allows the robot to follow a black line using two IR sensors.
-- It decides direction based on which sensor detects the line.
-- Behavior: Straight when both detect → Adjust if only one → Stop if lost.
+ 
