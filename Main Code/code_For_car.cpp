@@ -1,105 +1,109 @@
-// === Motor pin configuration ===
+// === Motor Pin Configuration ===
 const int motorL1 = 9;    // Left motor forward
 const int motorL2 = 10;   // Left motor backward
 const int motorR1 = 5;    // Right motor forward
 const int motorR2 = 6;    // Right motor backward
+const int motorSpeed = 150; // PWM Speed (0–255)
 
-// === Ultrasonic distance sensor pins ===
-const int trigPin = 7;    // Sends pulse (trigger)
-const int echoPin = 8;    // Receives echo (response)
+// === Ultrasonic Sensor Pins ===
+const int trigPin = 7;    
+const int echoPin = 8;    
 
-// === IR sensors for line following ===
-const int irLeft  = 2;    // Left IR sensor
-const int irRight = 3;    // Right IR sensor
+// === IR Sensors ===
+const int irLeft  = 2;
+const int irRight = 3;
 
-// === Thresholds and limits ===
-const int obstacleThreshold = 30;      // Distance in cm to detect an obstacle
-const long recoveryTimeout  = 3000;    // Time limit to recover lost line (ms)
-const long avoidTimeout     = 5000;    // Max time to avoid an obstacle (ms)
+// === Thresholds & Timings ===
+const int obstacleThreshold = 30;      // Distance in cm
+const long recoveryTimeout  = 3000;    // Line recovery timeout
+const long avoidTimeout     = 5000;    // Obstacle avoid timeout
 
 void setup() {
-  // Configure motor pins as outputs
+  // Initialize motor pins
   pinMode(motorL1, OUTPUT);
   pinMode(motorL2, OUTPUT);
   pinMode(motorR1, OUTPUT);
   pinMode(motorR2, OUTPUT);
 
-  // Set ultrasonic pins
+  // Initialize sensors
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-
-  // Set IR sensor pins
   pinMode(irLeft, INPUT);
   pinMode(irRight, INPUT);
 
-  // Begin serial communication for debugging
   Serial.begin(9600);
 }
 
 void loop() {
-  long distance = getDistance();          // Measure distance to obstacle
-  bool leftIR = digitalRead(irLeft);      // Check left IR sensor
-  bool rightIR = digitalRead(irRight);    // Check right IR sensor
+  long distance = getDistanceCM();
+  bool leftDetected = isLineUnderSensor(irLeft);
+  bool rightDetected = isLineUnderSensor(irRight);
 
-  printStatus(distance, leftIR, rightIR); // Log current sensor states
+  logStatus(distance, leftDetected, rightDetected);
 
-  // Obstacle detected ahead
   if (distance < obstacleThreshold) {
-    Serial.println("Obstacle detected. Initiating avoidance maneuver.");
-    avoid();
+    Serial.println("[!] Obstacle ahead. Attempting avoidance...");
+    avoidObstacle();
     return;
   }
 
-  // Interpret line sensor data
-  if (!leftIR && !rightIR) {
-    Serial.println("Line centered. Moving forward.");
+  // Line following logic
+  if (!leftDetected && !rightDetected) {
+    Serial.println("[✓] Line centered. Moving forward.");
     moveForward();
-  } else if (!leftIR && rightIR) {
-    Serial.println("Line drifting right. Adjusting left.");
+  } else if (!leftDetected && rightDetected) {
+    Serial.println("[→] Drifting right. Adjusting left.");
     turnLeft();
-  } else if (leftIR && !rightIR) {
-    Serial.println("Line drifting left. Adjusting right.");
+  } else if (leftDetected && !rightDetected) {
+    Serial.println("[←] Drifting left. Adjusting right.");
     turnRight();
   } else {
-    Serial.println("Line lost. Attempting recovery.");
-    recover();
+    Serial.println("[X] Line lost. Entering recovery mode.");
+    recoverLine();
   }
 
-  delay(100); // Short pause to stabilize readings
+  delay(100); // Loop delay for stability
 }
 
-// === Distance measurement using ultrasonic sensor ===
-long getDistance() {
+// === Sensor Functions ===
+
+long getDistanceCM() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duration = pulseIn(echoPin, HIGH, 20000); // Timeout for safety
-  if (duration == 0) return 999;                // Return large value if no echo
+  long duration = pulseIn(echoPin, HIGH, 20000); // timeout to avoid blocking
+  if (duration == 0) return 999;  // no echo
 
-  return duration * 0.034 / 2;  // Convert to centimeters
+  return duration * 0.034 / 2; // convert to cm
 }
 
-// === Print distance and IR sensor values to serial ===
-void printStatus(long dist, bool left, bool right) {
+bool isLineUnderSensor(int pin) {
+  // Assumes active-low IR sensors (returns LOW when over black line)
+  return digitalRead(pin) == LOW;
+}
+
+// === Logging ===
+
+void logStatus(long distance, bool left, bool right) {
   Serial.print("Distance: ");
-  Serial.print(dist);
+  Serial.print(distance);
   Serial.println(" cm");
 
   Serial.print("IR Left: ");
-  Serial.print(left ? "WHITE" : "BLACK");
-
+  Serial.print(left ? "BLACK" : "WHITE");
   Serial.print(" | IR Right: ");
-  Serial.println(right ? "WHITE" : "BLACK");
+  Serial.println(right ? "BLACK" : "WHITE");
 }
 
-// === Movement functions ===
+// === Movement Control ===
+
 void moveForward() {
-  digitalWrite(motorL1, HIGH);
+  analogWrite(motorL1, motorSpeed);
   digitalWrite(motorL2, LOW);
-  digitalWrite(motorR1, HIGH);
+  analogWrite(motorR1, motorSpeed);
   digitalWrite(motorR2, LOW);
 }
 
@@ -112,35 +116,34 @@ void stopMotors() {
 
 void turnLeft() {
   digitalWrite(motorL1, LOW);
-  digitalWrite(motorL2, HIGH);
-  digitalWrite(motorR1, HIGH);
+  analogWrite(motorL2, motorSpeed);
+  analogWrite(motorR1, motorSpeed);
   digitalWrite(motorR2, LOW);
 }
 
 void turnRight() {
-  digitalWrite(motorL1, HIGH);
+  analogWrite(motorL1, motorSpeed);
   digitalWrite(motorL2, LOW);
   digitalWrite(motorR1, LOW);
-  digitalWrite(motorR2, HIGH);
+  analogWrite(motorR2, motorSpeed);
 }
 
-// === Recovery behavior if line is lost ===
-void recover() {
+// === Behavior Logic ===
+
+void recoverLine() {
   stopMotors();
   delay(100);
 
-  // Start spinning in place (clockwise)
-  digitalWrite(motorL1, HIGH);
+  // Spin in place to find the line again
+  analogWrite(motorL1, motorSpeed);
   digitalWrite(motorL2, LOW);
   digitalWrite(motorR1, LOW);
-  digitalWrite(motorR2, HIGH);
+  analogWrite(motorR2, motorSpeed);
 
   unsigned long start = millis();
-
-  // Spin until line is detected again or timeout occurs
-  while (digitalRead(irLeft) == HIGH && digitalRead(irRight) == HIGH) {
+  while (!isLineUnderSensor(irLeft) && !isLineUnderSensor(irRight)) {
     if (millis() - start > recoveryTimeout) {
-      Serial.println("Line recovery failed. Stopping.");
+      Serial.println("[-] Failed to recover line. Stopping.");
       stopMotors();
       return;
     }
@@ -148,39 +151,38 @@ void recover() {
   }
 
   stopMotors();
-  Serial.println("Line successfully recovered.");
+  Serial.println("[✓] Line found and recovered.");
 }
 
-// === Obstacle avoidance sequence ===
-void avoid() {
+void avoidObstacle() {
   unsigned long start = millis();
 
-  // Step 1: Turn right slightly
+  // Step 1: Turn slightly right
   turnRight();
   delay(400);
 
-  // Step 2: Move forward for a short duration or until obstacle is cleared
+  // Step 2: Go forward for a moment
   moveForward();
   unsigned long forwardStart = millis();
   while (millis() - forwardStart < 1200) {
-    if (getDistance() > obstacleThreshold + 10) break;
+    if (getDistanceCM() > obstacleThreshold + 10) break;
     delay(50);
   }
 
-  // Step 3: Turn back slightly to re-align
+  // Step 3: Turn slightly left to realign
   turnLeft();
   delay(400);
 
-  // Step 4: Move forward again to resume line
+  // Step 4: Move forward a bit more
   moveForward();
   delay(500);
 
-  // Attempt to reacquire line
-  recover();
+  // Try recovering the line after avoidance
+  recoverLine();
 
-  // If still stuck after timeout, just proceed forward
+  // Timeout fallback
   if (millis() - start > avoidTimeout) {
-    Serial.println("Avoidance timeout reached. Proceeding forward.");
+    Serial.println("[!] Avoidance timeout. Proceeding forward anyway.");
     moveForward();
     delay(1000);
   }
