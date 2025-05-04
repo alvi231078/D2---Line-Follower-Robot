@@ -1,4 +1,52 @@
+🚗 Line Follower Robot – Project Description
+Your project is a Line Follower Robot enhanced with obstacle avoidance capabilities using a state machine-based control system. Here's how it works step-by-step:
 
+🔌 Startup
+The robot begins in the Idle state after being powered on.
+
+It transitions to LineFollowing when it receives a start command.
+
+🧠 Core Behavior
+In LineFollowing, the robot uses infrared (IR) sensors to follow a black line on the ground.
+
+If no obstacle is detected, it keeps following the line.
+
+If an obstacle is detected (via an ultrasonic sensor), it enters the ObstacleDetected state.
+
+🕹️ Obstacle Avoidance
+The robot stops and rotates a servo motor to scan its surroundings (ScanDirections).
+
+It collects distance data from different directions (ChooseDirection) and selects the best path.
+
+It then enters the BypassObstacle process, which decides whether to go right or left depending on available space.
+
+🔄 Right or Left Bypass
+In either RightBypass or LeftBypass, the robot:
+
+Slightly turns in the chosen direction.
+
+Moves forward, makes multiple turns to go around the obstacle.
+
+Ends by searching for the original line again using its IR sensors.
+
+👁️ Line Reacquisition
+In LookForLineIR, the robot scans for the line.
+
+Once the line is found (FinishBypass), it exits the bypass routine.
+
+It returns to LineFollowing to continue on its path.
+
+🛑 Shutdown
+If the stop button is pressed or the battery is low, the robot enters the Stop state and powers off.
+
+🧩 Key Technologies Involved:
+IR sensors – For line tracking.
+
+Ultrasonic sensor – For detecting obstacles.
+
+Servo motor – For rotating and scanning directions.
+
+State machine – To manage complex behaviors cleanly and modularly.
 
 ### 📘 `EXPLAIN.md` – Line-by-Line Code Explanation
 
