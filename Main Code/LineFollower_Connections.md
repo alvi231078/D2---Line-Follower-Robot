@@ -1,58 +1,90 @@
-# Intelligent Line Follower & Obstacle Avoidance Robot
-
-This robot combines IR-based line following, ultrasonic obstacle detection, and optional color detection using the TCS3200 color sensor. It is designed to continue operating even if the color sensor is not connected or active.
+Great! Since you're using a **motor controller** (most likely an **L298N**, **L9110**, or **TB6612FNG**), here's an updated and complete version of your **`connection.md`** file tailored for that setup:
 
 ---
 
-## 🔌 Wiring Connections
+# 🛠️ Robot Sensor & Motor Controller Connections (`connection.md`)
 
-### 🟦 Arduino UNO Pins
+## ⚡ Motor Controller Module
 
-| Component            | Arduino Pin | Description                          |
-|---------------------|-------------|--------------------------------------|
-| Left Motor          | 9           | Left motor forward (PWM capable)     |
-|                     | 10          | Left motor backward                  |
-| Right Motor         | 5           | Right motor forward (PWM capable)    |
-|                     | 6           | Right motor backward                 |
-| IR Sensor (Left)    | 2           | Digital input                        |
-| IR Sensor (Right)   | 3           | Digital input                        |
-| Ultrasonic Trigger  | 7           | Sends ultrasonic pulse               |
-| Ultrasonic Echo     | 8           | Receives reflected pulse             |
-| Color Sensor S0     | 4           | Frequency scaling control            |
-| Color Sensor S1     | A0          | Frequency scaling control            |
-| Color Sensor S2     | A1          | Color filter selection               |
-| Color Sensor S3     | A2          | Color filter selection               |
-| Color Sensor OUT    | A3          | Frequency output (to measure color)  |
+### Example: L298N or TB6612FNG
 
----
+Controls two DC motors with direction and optional speed via PWM.
 
-## 🔋 Power Supply
+| Function           | Arduino Pin             | Notes                                  |
+| ------------------ | ----------------------- | -------------------------------------- |
+| Left Motor IN1     | 9                       | `motorL1` – Direction control          |
+| Left Motor IN2     | 10                      | `motorL2` – Direction control          |
+| Right Motor IN1    | 5                       | `motorR1` – Direction control          |
+| Right Motor IN2    | 6                       | `motorR2` – Direction control          |
+| Motor VCC          | External                | Connect to motor battery (e.g., 6–12V) |
+| Motor GND          | Common GND              | Shared with Arduino GND                |
+| 5V Output (opt.)   | Optional                | Can power Arduino if jumper is in      |
+| ENA (if available) | PWM (or bridged to VCC) | Controls left motor speed              |
+| ENB (if available) | PWM (or bridged to VCC) | Controls right motor speed             |
 
-- Motors must be powered with an external **6–12V battery** (Li-Po recommended).
-- Arduino UNO can be powered via USB or from the **VIN pin** using the same battery.
-- IR, ultrasonic, and color sensors operate on **5V from the Arduino**.
-
-> ⚠️ Ensure your motor driver can handle the current load of your motors.
+> 💡 If your module uses **ENA/ENB**, connect them to PWM pins or jumper them high to always enable the motors.
 
 ---
 
-## 🧠 Behavior Summary
+## 🔍 IR Line Sensors
 
-| Trigger Condition        | Robot Response                 |
-|--------------------------|--------------------------------|
-| Both IR sensors on black | Move forward                  |
-| One IR sensor off line   | Adjust direction              |
-| Both IR sensors on white | Line lost → Begin recovery    |
-| Obstacle within 30 cm    | Avoid by turning and bypassing|
-| Red color detected       | Stop temporarily              |
-| Green color detected     | Move forward faster           |
-| Blue color detected      | Turn right                    |
-| No/Unknown color         | Ignore, continue normal logic |
+| Sensor   | Arduino Pin | Type    | Notes                  |
+| -------- | ----------- | ------- | ---------------------- |
+| Left IR  | 2           | Digital | Returns `LOW` on black |
+| Right IR | 3           | Digital | Returns `LOW` on black |
 
 ---
 
-## ✅ Notes
+## 📏 Ultrasonic Distance Sensor (HC-SR04)
 
-- The robot gracefully handles **missing or noisy color sensor input** by ignoring it.
-- Behavior for colors can be **easily customized** in the Arduino code.
-- Use the **Serial Monitor (9600 baud)** to view real-time sensor readings for debugging.
+| Function | Arduino Pin | Direction | Notes         |
+| -------- | ----------- | --------- | ------------- |
+| Trigger  | 7           | Output    | Sends signal  |
+| Echo     | 8           | Input     | Receives echo |
+
+---
+
+## 🎨 TCS3200 Color Sensor
+
+| Pin Name | Arduino Pin | Direction | Description                   |
+| -------- | ----------- | --------- | ----------------------------- |
+| S0       | 4           | Output    | Frequency scaling             |
+| S1       | A0          | Output    | Frequency scaling             |
+| S2       | A1          | Output    | Color filter select           |
+| S3       | A2          | Output    | Color filter select           |
+| OUT      | A3          | Input     | Frequency output (color data) |
+
+* **Frequency Scaling Configuration**:
+
+  ```cpp
+  digitalWrite(S0, HIGH);
+  digitalWrite(S1, LOW); // 20% output scaling
+  ```
+
+---
+
+## ⚙️ System Thresholds & Timers
+
+| Name                | Value   | Description                         |
+| ------------------- | ------- | ----------------------------------- |
+| `obstacleThreshold` | 30 cm   | Minimum distance before avoiding    |
+| `recoveryTimeout`   | 3000 ms | Time to try recovering line         |
+| `avoidTimeout`      | 5000 ms | Max time to complete obstacle avoid |
+| `stuckTimeout`      | 4000 ms | Time before considered stuck        |
+
+---
+
+## 🖥️ Serial Monitor Debug Info
+
+* **Baud Rate**: `9600`
+* **Logs**:
+
+  * IR sensor status (`BLACK`/`WHITE`)
+  * Distance (Ultrasonic)
+  * Detected color (TCS3200)
+  * Motor actions (Forward, Left, Right, Stop)
+  * Sensor and recovery errors
+
+---
+
+Would you like this as a downloadable `.md` file or a wiring diagram for your motor controller included as well?
