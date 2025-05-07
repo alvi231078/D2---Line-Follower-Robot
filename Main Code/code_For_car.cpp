@@ -1,13 +1,19 @@
-// === Motor Controller Pins ===
+#include <Servo.h> // Add Servo library
+
+// === Motor Pins ===
 const int motorL1 = 9;
 const int motorL2 = 10;
 const int motorR1 = 5;
 const int motorR2 = 6;
 const int motorSpeed = 150;
 
-// === 3-Pin IR Sensor Outputs ===
-const int irLeft = 2;   // OUT pin from left IR sensor
-const int irRight = 3;  // OUT pin from right IR sensor
+// === IR Sensors ===
+const int irLeft = 2;
+const int irRight = 3;
+
+// === Ultrasonic Sensor ===
+const int trigPin = 7;
+const int echoPin = 8;
 
 // === TCS3200 Color Sensor Pins (optional) ===
 const int S0 = 4;
@@ -16,29 +22,64 @@ const int S2 = A1;
 const int S3 = A2;
 const int sensorOut = A3;
 
-// === Color logic (optional) ===
+// === Servo Motor ===
+const int servoPin = 11;
+Servo myServo; // Create servo object
+
+// === Thresholds and Timers ===
+const int obstacleThreshold = 30;
+const long recoveryTimeout = 3000;
+const long avoidTimeout = 5000;
+const unsigned long stuckTimeout = 4000;
+
+unsigned long lastMoveTime = 0;
+bool wasMoving = false;
+int ultrasonicFailureCount = 0;
+int maxSensorFailures = 3;
+
 void setup() {
   pinMode(motorL1, OUTPUT); pinMode(motorL2, OUTPUT);
   pinMode(motorR1, OUTPUT); pinMode(motorR2, OUTPUT);
 
   pinMode(irLeft, INPUT); pinMode(irRight, INPUT);
+  pinMode(trigPin, OUTPUT); pinMode(echoPin, INPUT);
 
   pinMode(S0, OUTPUT); pinMode(S1, OUTPUT);
   pinMode(S2, OUTPUT); pinMode(S3, OUTPUT);
   pinMode(sensorOut, INPUT);
+
   digitalWrite(S0, HIGH); digitalWrite(S1, LOW); // 20% scaling
+
+  myServo.attach(servoPin); // Attach the servo
+  myServo.write(90);        // Center position
 
   Serial.begin(9600);
 }
 
 void loop() {
+  long distance = getDistanceCM();
+  if (distance == -1) {
+    ultrasonicFailureCount++;
+    Serial.println("[ERROR] Ultrasonic sensor failed to respond.");
+    if (ultrasonicFailureCount >= maxSensorFailures) {
+      Serial.println("[CRITICAL] Too many ultrasonic failures. Stopping.");
+      stopMotors();
+      while (true);  // Hard stop
+    }
+    delay(200);
+    return;
+  } else {
+    ultrasonicFailureCount = 0;
+  }
+
   bool leftIR = isLineUnderSensor(irLeft);
   bool rightIR = isLineUnderSensor(irRight);
   String color = readColor();
 
-  logStatus(leftIR, rightIR, color);
+  logStatus(distance, leftIR, rightIR, color);
+  checkIfStuck(distance, leftIR, rightIR);
 
-  // Color-based actions (optional)
+  // Color-based logic
   if (color == "RED") {
     Serial.println("[COLOR] RED → Stopping");
     stopMotors();
@@ -56,79 +97,43 @@ void loop() {
     return;
   }
 
-  // Line-following logic (IR-based only)
+  // Obstacle avoidance
+  if (distance < obstacleThreshold) {
+    Serial.println("[!] Obstacle detected. Avoiding...");
+
+    // Sweep servo to scan for open direction
+    for (int angle = 60; angle <= 120; angle += 15) {
+      myServo.write(angle);
+      delay(200);
+      long scanDist = getDistanceCM();
+      Serial.print("[Servo Scan] Angle: "); Serial.print(angle);
+      Serial.print(" Distance: "); Serial.println(scanDist);
+    }
+    myServo.write(90); // Re-center
+    avoidObstacle();
+    return;
+  }
+
+  // Line following logic
   if (!leftIR && !rightIR) {
     Serial.println("[✓] On line. Moving forward.");
     moveForward();
+    wasMoving = true;
+    lastMoveTime = millis();
   } else if (!leftIR && rightIR) {
     Serial.println("[→] Adjusting left.");
     turnLeft();
+    wasMoving = true;
+    lastMoveTime = millis();
   } else if (leftIR && !rightIR) {
     Serial.println("[←] Adjusting right.");
     turnRight();
+    wasMoving = true;
+    lastMoveTime = millis();
   } else {
-    Serial.println("[X] Line lost. Stopping.");
-    stopMotors();
+    Serial.println("[X] Line lost. Attempting recovery...");
+    recoverLine();
   }
 
   delay(100);
-}
-
-// === Movement ===
-void moveForward() {
-  analogWrite(motorL1, motorSpeed); digitalWrite(motorL2, LOW);
-  analogWrite(motorR1, motorSpeed); digitalWrite(motorR2, LOW);
-}
-
-void stopMotors() {
-  digitalWrite(motorL1, LOW); digitalWrite(motorL2, LOW);
-  digitalWrite(motorR1, LOW); digitalWrite(motorR2, LOW);
-}
-
-void turnLeft() {
-  digitalWrite(motorL1, LOW); analogWrite(motorL2, motorSpeed);
-  analogWrite(motorR1, motorSpeed); digitalWrite(motorR2, LOW);
-}
-
-void turnRight() {
-  analogWrite(motorL1, motorSpeed); digitalWrite(motorL2, LOW);
-  digitalWrite(motorR1, LOW); analogWrite(motorR2, motorSpeed);
-}
-
-// === IR Sensor ===
-bool isLineUnderSensor(int pin) {
-  int val = digitalRead(pin);
-  return val == LOW;  // LOW = black line
-}
-
-// === Color Sensor (optional) ===
-String readColor() {
-  int red = readColorFrequency(LOW, LOW);
-  int green = readColorFrequency(HIGH, HIGH);
-  int blue = readColorFrequency(LOW, HIGH);
-
-  if (red < 0 || green < 0 || blue < 0) return "UNKNOWN";
-
-  Serial.print("R: "); Serial.print(red);
-  Serial.print(" G: "); Serial.print(green);
-  Serial.print(" B: "); Serial.println(blue);
-
-  if (red < green && red < blue) return "RED";
-  if (green < red && green < blue) return "GREEN";
-  if (blue < red && blue < green) return "BLUE";
-  return "UNKNOWN";
-}
-
-int readColorFrequency(bool s2Val, bool s3Val) {
-  digitalWrite(S2, s2Val); digitalWrite(S3, s3Val);
-  delay(50);
-  long pulse = pulseIn(sensorOut, LOW, 50000);
-  return (pulse == 0) ? -1 : pulse;
-}
-
-// === Debugging ===
-void logStatus(bool left, bool right, String color) {
-  Serial.print("IR L: "); Serial.print(left ? "BLACK" : "WHITE");
-  Serial.print(" | IR R: "); Serial.print(right ? "BLACK" : "WHITE");
-  Serial.print(" | Color: "); Serial.println(color);
 }
