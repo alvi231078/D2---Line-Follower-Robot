@@ -4,7 +4,7 @@ This project is a simple Line Follower Car built using an Arduino Uno, two DC mo
 
 ## Components Used:
 
-- Arduino Uno
+- Arduino Uno 
 - Motor Driver (L298N or similar)
 - MG78MO5 Motor Controller
 - 2 DC Motors
