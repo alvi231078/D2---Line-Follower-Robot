@@ -66,10 +66,10 @@ Ensure all components share a common ground:
 | IN2       | Arduino D6                                   |                      |
 | IN3       | Arduino D7                                   |                      |
 | IN4       | Arduino D8                                   |                      |
-| OUT1      | Motor A terminal 1                           |                      |
-| OUT2      | Motor A terminal 2                           |                      |
-| OUT3      | Motor B terminal 1                           |                      |
-| OUT4      | Motor B terminal 2                           | ([Arduino Forum][4]) |
+| OUT1      | Motor B terminal 1                           |                      |
+| OUT2      | Motor B terminal 2                           |                      |
+| OUT3      | Motor A terminal 1                           |                      |
+| OUT4      | Motor A terminal 2                           | Motor B is left motor A is right |
 
 > **Tip:** Connecting ENA and ENB to PWM-capable pins (D10 and D11) allows for motor speed control using `analogWrite()`.
 
