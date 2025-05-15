@@ -5,11 +5,7 @@ Given that my sensors output:
 
 1 when over a white surface
 
-You can use this behavior to control your robot's movement:
-Circuit Digest
-+1
-Arduino Forum
-+1
+We can use this behavior to control your robot's movement:
 
 Both sensors detect white (1): Robot moves forward.
 
