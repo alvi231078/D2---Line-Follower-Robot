@@ -18,3 +18,5 @@ void loop() {
 
   delay(200);
 }
+// code to read the IR sensors and print their states to the Serial Monitor
+// This code assumes that the IR sensors are connected to digital pins D2 and D3
