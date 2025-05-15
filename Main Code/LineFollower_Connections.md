@@ -60,8 +60,8 @@ Ensure all components share a common ground:
 | --------- | -------------------------------------------- | -------------------- |
 | VCC       | Switch output terminal (9V battery positive) |                      |
 | GND       | Common Ground                                |                      |
-| ENA       | Arduino D10 (PWM for Motor A)                |                      |
-| ENB       | Arduino D11 (PWM for Motor B)                |                      |
+| ENA       | Arduino 5V               |                      |
+| ENB       | Arduino 5V              |                      |
 | IN1       | Arduino D5                                   |                      |
 | IN2       | Arduino D6                                   |                      |
 | IN3       | Arduino D7                                   |                      |
