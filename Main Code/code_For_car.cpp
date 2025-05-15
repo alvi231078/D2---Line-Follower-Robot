@@ -1,18 +1,20 @@
+const int leftSensor = 2;  // Left IR sensor connected to digital pin D2
+const int rightSensor = 3; // Right IR sensor connected to digital pin D3
+
 void setup() {
-  Serial.begin(9600); // Initialize serial communication at 9600 bps
-  pinMode(A0, INPUT); // Left IR sensor
-  pinMode(A1, INPUT); // Right IR sensor
+  pinMode(leftSensor, INPUT);
+  pinMode(rightSensor, INPUT);
+  Serial.begin(9600);
 }
 
 void loop() {
-  int leftIR = analogRead(A0);  // Read value from left IR sensor
-  int rightIR = analogRead(A1); // Read value from right IR sensor
+  int leftState = digitalRead(leftSensor);
+  int rightState = digitalRead(rightSensor);
 
-  // Print the sensor values to the Serial Monitor
-  Serial.print("Left IR: ");
-  Serial.print(leftIR);
-  Serial.print(" | Right IR: ");
-  Serial.println(rightIR);
+  Serial.print("Left Sensor: ");
+  Serial.print(leftState);
+  Serial.print(" | Right Sensor: ");
+  Serial.println(rightState);
 
-  delay(200); // Wait for 200 milliseconds before the next reading
+  delay(200);
 }
