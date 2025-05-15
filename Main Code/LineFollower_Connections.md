@@ -1,4 +1,23 @@
+# Logic we will play on: 
+Given that my sensors output:
 
+0 when detecting a black line
+
+1 when over a white surface
+
+You can use this behavior to control your robot's movement:
+Circuit Digest
++1
+Arduino Forum
++1
+
+Both sensors detect white (1): Robot moves forward.
+
+Left sensor detects black (0), right sensor detects white (1): Robot turns left.
+
+Left sensor detects white (1), right sensor detects black (0): Robot turns right.
+
+Both sensors detect black (0): Robot stops or performs a specific action (e.g., U-turn).
 # Line Follower Robot – Wiring 
 
 ## 1. Power Supply & Switch
