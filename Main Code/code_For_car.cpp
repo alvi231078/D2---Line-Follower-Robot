@@ -182,3 +182,12 @@ void rotateToFindLine() {
   // Once line is found, reset integral to avoid overcompensation
   integral = 0;
 }
+
+
+/*How to Tune This Code:
+If you need to adjust the robot's behavior:
+
+Increase Kp for more aggressive turns when off the line
+Increase Ki if the robot consistently misses the center of the line
+Increase Kd if the robot oscillates or overshoots when returning to the line
+Adjust baseSpeed for the robot's overall speed (start lower for testing)*/
