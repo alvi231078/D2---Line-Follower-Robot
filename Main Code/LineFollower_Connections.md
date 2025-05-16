@@ -1,132 +1,79 @@
+# Line Follower Robot with Motor Driver and IR Sensors
+
+This project is a simple line follower robot using two digital IR sensors and a motor driver to control two DC motors (left and right). The robot follows a black line on a white surface by reading sensor inputs and controlling motor speed and direction accordingly.
 
 ---
 
-## 🔋 1. Power Supply & Switch
+## Hardware Connections
 
-| Component               | Connection                                     |                       |
-| ----------------------- | ---------------------------------------------- | --------------------- |
-| 9V Battery Positive (+) | → Switch input terminal                        |                       |
-| Switch Output Terminal  | → Arduino VIN pin<br>→ L298N VCC (Motor Power) |                       |
-| 9V Battery Negative (−) | → Common Ground                                | ([Circuit Digest][1]) |
+### Motor Driver Pins
+| Pin | Description             |
+|------|------------------------|
+| 10   | ENA - PWM Motor A (Left Motor Speed Control)   |
+| 11   | ENB - PWM Motor B (Right Motor Speed Control)  |
+| 5    | IN1 - Motor A Input 1 (Left Motor Direction)   |
+| 6    | IN2 - Motor A Input 2 (Left Motor Direction)   |
+| 7    | IN3 - Motor B Input 1 (Right Motor Direction)  |
+| 8    | IN4 - Motor B Input 2 (Right Motor Direction)  |
 
-> **Note:** The switch controls power to both the Arduino and the motor driver simultaneously.
-
----
-
-## ⚙️ 2. Common Ground
-
-Ensure all components share a common ground:
-
-* Battery Negative (−)
-* Arduino GND
-* L298N GND
-* All sensor GNDs (IR sensors, ultrasonic sensor, servo motor, color sensor)([Instructables][2], [How To Mechatronics][3])
-
-> **Importance:** A common ground is crucial for proper operation and accurate sensor readings.
+### IR Sensor Pins (Digital)
+| Pin | Description       |
+|------|------------------|
+| 3    | Left IR Sensor    |
+| 4    | Right IR Sensor   |
 
 ---
 
-## 🧠 3. Arduino Uno Pin Connections
+## Speed Settings
 
-| Arduino Pin | Connected To                                                    |   |
-| ----------- | --------------------------------------------------------------- | - |
-| VIN         | Switch output terminal (from 9V battery)                        |   |
-| GND         | Common Ground                                                   |   |
-| D5          | L298N IN1                                                       |   |
-| D6          | L298N IN2                                                       |   |
-| D7          | L298N IN3                                                       |   |
-| D8          | L298N IN4                                                       |   |
-| D9          | Servo Motor Signal                                              |   |
-| D10         | L298N ENA (PWM for Motor A)                                     |   |
-| D11         | L298N ENB (PWM for Motor B)                                     |   |
-| D12         | Ultrasonic Sensor Trig                                          |   |
-| D13         | Ultrasonic Sensor Echo                                          |   |
-| A0          | Color Sensor S0                                                 |   |
-| A1          | Color Sensor S1                                                 |   |
-| A2          | Color Sensor S2                                                 |   |
-| A3          | Color Sensor S3                                                 |   |
-| A4          | Color Sensor OUT (Digital or Analog Input, depending on sensor) |   |
-| D3          | Left IR Sensor Signal (Digital Output)                          |   |
-| D4          | Right IR Sensor Signal (Digital Output)                         |   |
-| 5V          | Powers sensors and servo (from Arduino regulator)               |   |
-
-> **Note:** IR sensors are now connected to digital pins D3 and D4.
+| Variable       | Value | Description                  |
+|----------------|-------|------------------------------|
+| `baseSpeed`    | 65    | Normal forward speed (PWM)    |
+| `maxSpeed`     | 90    | Maximum speed (not used in code) |
+| `reverseSpeed` | 60    | Speed when reversing          |
 
 ---
 
-## 🔌 4. L298N Motor Driver
+## How It Works
 
-| L298N Pin | Connected To                                 |                      |
-| --------- | -------------------------------------------- | -------------------- |
-| VCC       | Switch output terminal (9V battery positive) |                      |
-| GND       | Common Ground                                |                      |
-| ENA       | Arduino 5V               |                      |
-| ENB       | Arduino 5V              |                      |
-| IN1       | Arduino D5                                   |                      |
-| IN2       | Arduino D6                                   |                      |
-| IN3       | Arduino D7                                   |                      |
-| IN4       | Arduino D8                                   |                      |
-| OUT1      | Motor B terminal 1                           |                      |
-| OUT2      | Motor B terminal 2                           |                      |
-| OUT3      | Motor A terminal 1                           |                      |
-| OUT4      | Motor A terminal 2                           | Motor B is left motor A is right |
-
-> **Tip:** Connecting ENA and ENB to PWM-capable pins (D10 and D11) allows for motor speed control using `analogWrite()`.
+- The robot reads the state of two IR sensors (`leftSensorPin` and `rightSensorPin`).
+- Both sensors LOW: Robot moves forward.
+- Left sensor HIGH, right sensor LOW: Robot turns left.
+- Left sensor LOW, right sensor HIGH: Robot turns right.
+- Both sensors HIGH: Robot reverses to search for the line.
 
 ---
 
-## 📟 5. IR Sensors (Left & Right)
+## Functions
 
-| IR Sensor Pin | Connected To                                          |                                    |
-| ------------- | ----------------------------------------------------- | ---------------------------------- |
-| VCC           | Arduino 5V                                            |                                    |
-| GND           | Common Ground                                         |                                    |
-| OUT (Signal)  | Left Sensor → Arduino D3<br>Right Sensor → Arduino D4 | ([Instructables][5], [YouTube][6]) |
-
-> **Note:** IR sensors are connected to digital pins D3 and D4, providing digital output.
+- `moveForward(speed)`: Drives both motors forward at the specified speed.
+- `turnLeft(speed)`: Stops left motor and runs right motor forward to turn left.
+- `turnRight(speed)`: Runs left motor forward and stops right motor to turn right.
+- `moveBackward(speed)`: Drives both motors backward at the specified speed.
 
 ---
 
-## 📏 6. Ultrasonic Sensor (HC-SR04)
+## Usage
 
-| Ultrasonic Pin | Connected To  |                            |
-| -------------- | ------------- | -------------------------- |
-| VCC            | Arduino 5V    |                            |
-| GND            | Common Ground |                            |
-| Trig           | Arduino D12   |                            |
-| Echo           | Arduino D13   | ([How To Mechatronics][3]) |
-
-> **Tip:** Ensure that the Echo pin is connected to a digital pin capable of receiving input.
+1. Connect your motors and IR sensors as described in the Hardware Connections.
+2. Upload the provided Arduino sketch to your microcontroller.
+3. Place the robot on a black line on a white surface and power it on.
+4. The robot will follow the line by continuously adjusting its motor speeds based on sensor inputs.
 
 ---
 
-## 🔄 7. Servo Motor (SG90)
+## Notes
 
-| Servo Pin | Connected To  |   |
-| --------- | ------------- | - |
-| VCC       | Arduino 5V    |   |
-| GND       | Common Ground |   |
-| Signal    | Arduino D9    |   |
-
-> **Caution:** Servo motors can draw significant current. If you experience issues, consider powering the servo with an external 5V supply and connecting the grounds together.
+- Make sure your IR sensors are calibrated properly for the surface colors.
+- Adjust `baseSpeed` and `reverseSpeed` values if needed for better line tracking.
+- `maxSpeed` is defined but not used in the current code. You can modify the code to utilize it if required.
 
 ---
 
-## 🎨 8. Color Sensor (e.g., TCS3200)
+## License
 
-| Color Sensor Pin | Connected To                                         |   |
-| ---------------- | ---------------------------------------------------- | - |
-| VCC              | Arduino 5V                                           |   |
-| GND              | Common Ground                                        |   |
-| S0               | Arduino A0                                           |   |
-| S1               | Arduino A1                                           |   |
-| S2               | Arduino A2                                           |   |
-| S3               | Arduino A3                                           |   |
-| OUT              | Arduino A4                                           |   |
-| LED              | Arduino 5V (or Arduino pin via resistor for control) |   |
-
-> **Note:** The OUT pin can be connected to a digital or analog pin to measure frequency output corresponding to color intensity.
+This project is open source and free to use.
 
 ---
 
-
+If you want, I can help you add improvements like PID control or sensor calibration steps—just ask!
