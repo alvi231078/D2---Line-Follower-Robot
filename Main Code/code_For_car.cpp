@@ -6,17 +6,20 @@ const int IN2 = 6;   // Motor A input 2
 const int IN3 = 7;   // Motor B input 1
 const int IN4 = 8;   // Motor B input 2
 
-// IR sensor pins (digital)
-const int leftSensorPin = 3;
-const int rightSensorPin = 4;
+// IR sensor pins
+const int LEFT_SENSOR  = 3;
+const int RIGHT_SENSOR = 4;
 
-// Speed settings (PWM 0-255)
-const int baseSpeed = 65;
-const int maxSpeed = 90;
-const int reverseSpeed = 60;
+// Speed settings
+const int BASE_SPEED    = 65;
+const int TURN_SPEED    = 90;
+const int REVERSE_SPEED = 60;
+
+// Directions for readability
+enum Dir { STOP = 0, FORWARD = 1, BACKWARD = -1 };
 
 void setup() {
-  // Set motor pins as outputs
+  // Motor pins
   pinMode(ENA, OUTPUT);
   pinMode(ENB, OUTPUT);
   pinMode(IN1, OUTPUT);
@@ -24,70 +27,42 @@ void setup() {
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
 
-  // Set sensor pins as inputs
-  pinMode(leftSensorPin, INPUT);
-  pinMode(rightSensorPin, INPUT);
+  // Sensors
+  pinMode(LEFT_SENSOR, INPUT);
+  pinMode(RIGHT_SENSOR, INPUT);
+}
+
+// Utility to set each motor’s speed & direction.
+// leftSpeed/rightSpeed = PWM 0–255
+// leftDir/rightDir = FORWARD, BACKWARD, or STOP
+void drive(int leftSpeed, Dir leftDir, int rightSpeed, Dir rightDir) {
+  analogWrite(ENA, leftSpeed);
+  analogWrite(ENB, rightSpeed);
+  
+  digitalWrite(IN1, leftDir == FORWARD);
+  digitalWrite(IN2, leftDir == BACKWARD);
+  digitalWrite(IN3, rightDir == FORWARD);
+  digitalWrite(IN4, rightDir == BACKWARD);
 }
 
 void loop() {
-  // Read sensor values
-  int leftSensor = digitalRead(leftSensorPin);
-  int rightSensor = digitalRead(rightSensorPin);
+  bool onLineL = digitalRead(LEFT_SENSOR)  == LOW;
+  bool onLineR = digitalRead(RIGHT_SENSOR) == LOW;
 
-  // If both sensors are on the line, move forward
-  if (leftSensor == LOW && rightSensor == LOW) {
-    moveForward(baseSpeed);
+  if (onLineL && onLineR) {
+    // both sensors see line → go straight
+    drive(BASE_SPEED, FORWARD, BASE_SPEED, FORWARD);
   }
-  // If only the left sensor is off the line, turn left
-  else if (leftSensor == HIGH && rightSensor == LOW) {
-    turnLeft(baseSpeed);
+  else if (!onLineL && onLineR) {
+    // left sensor off line → spin left in place
+    drive(TURN_SPEED, BACKWARD, TURN_SPEED, FORWARD);
   }
-  // If only the right sensor is off the line, turn right
-  else if (leftSensor == LOW && rightSensor == HIGH) {
-    turnRight(baseSpeed);
+  else if (onLineL && !onLineR) {
+    // right sensor off line → spin right in place
+    drive(TURN_SPEED, FORWARD, TURN_SPEED, BACKWARD);
   }
-  // If both sensors are off the line, reverse and search for the line
   else {
-    moveBackward(reverseSpeed);
+    // lost the line entirely → back up
+    drive(REVERSE_SPEED, BACKWARD, REVERSE_SPEED, BACKWARD);
   }
-}
-
-// Function to move forward
-void moveForward(int speed) {
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-}
-
-// Function to turn left
-void turnLeft(int speed) {
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-}
-
-// Function to turn right
-void turnRight(int speed) {
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
-}
-
-// Function to move backward
-void moveBackward(int speed) {
-  analogWrite(ENA, speed);
-  analogWrite(ENB, speed);
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
 }
