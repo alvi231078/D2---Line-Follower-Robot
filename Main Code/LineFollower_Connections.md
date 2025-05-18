@@ -73,7 +73,3 @@ This project is a simple line follower robot using two digital IR sensors and a 
 ## License
 
 This project is open source and free to use.
-
----
-
-If you want, I can help you add improvements like PID control or sensor calibration steps—just ask!
