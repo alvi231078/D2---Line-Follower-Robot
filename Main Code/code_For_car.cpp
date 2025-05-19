@@ -1,139 +1,68 @@
-#include <Servo.h> // Add Servo library
+// Motor driver pins
+const int ENA = 10;  // PWM Motor A (left)
+const int ENB = 11;  // PWM Motor B (right)
+const int IN1 = 5;   // Motor A input 1
+const int IN2 = 6;   // Motor A input 2
+const int IN3 = 7;   // Motor B input 1
+const int IN4 = 8;   // Motor B input 2
 
-// === Motor Pins ===
-const int motorL1 = 9;
-const int motorL2 = 10;
-const int motorR1 = 5;
-const int motorR2 = 6;
-const int motorSpeed = 150;
+// IR sensor pins
+const int LEFT_SENSOR  = 3;
+const int RIGHT_SENSOR = 4;
 
-// === IR Sensors ===
-const int irLeft = 2;
-const int irRight = 3;
+// Speed settings
+const int BASE_SPEED    = 65;
+const int TURN_SPEED    = 90;
+const int REVERSE_SPEED = 60;
 
-// === Ultrasonic Sensor ===
-const int trigPin = 7;
-const int echoPin = 8;
-
-// === TCS3200 Color Sensor Pins (optional) ===
-const int S0 = 4;
-const int S1 = A0;
-const int S2 = A1;
-const int S3 = A2;
-const int sensorOut = A3;
-
-// === Servo Motor ===
-const int servoPin = 11;
-Servo myServo; // Create servo object
-
-// === Thresholds and Timers ===
-const int obstacleThreshold = 30;
-const long recoveryTimeout = 3000;
-const long avoidTimeout = 5000;
-const unsigned long stuckTimeout = 4000;
-
-unsigned long lastMoveTime = 0;
-bool wasMoving = false;
-int ultrasonicFailureCount = 0;
-int maxSensorFailures = 3;
+// Directions for readability
+enum Dir { STOP = 0, FORWARD = 1, BACKWARD = -1 };
 
 void setup() {
-  pinMode(motorL1, OUTPUT); pinMode(motorL2, OUTPUT);
-  pinMode(motorR1, OUTPUT); pinMode(motorR2, OUTPUT);
+  // Motor pins
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
 
-  pinMode(irLeft, INPUT); pinMode(irRight, INPUT);
-  pinMode(trigPin, OUTPUT); pinMode(echoPin, INPUT);
+  // Sensors
+  pinMode(LEFT_SENSOR, INPUT);
+  pinMode(RIGHT_SENSOR, INPUT);
+}
 
-  pinMode(S0, OUTPUT); pinMode(S1, OUTPUT);
-  pinMode(S2, OUTPUT); pinMode(S3, OUTPUT);
-  pinMode(sensorOut, INPUT);
-
-  digitalWrite(S0, HIGH); digitalWrite(S1, LOW); // 20% scaling
-
-  myServo.attach(servoPin); // Attach the servo
-  myServo.write(90);        // Center position
-
-  Serial.begin(9600);
+// Utility to set each motor’s speed & direction.
+// leftSpeed/rightSpeed = PWM 0–255
+// leftDir/rightDir = FORWARD, BACKWARD, or STOP
+void drive(int leftSpeed, Dir leftDir, int rightSpeed, Dir rightDir) {
+  analogWrite(ENA, leftSpeed);
+  analogWrite(ENB, rightSpeed);
+  
+  digitalWrite(IN1, leftDir == FORWARD);
+  digitalWrite(IN2, leftDir == BACKWARD);
+  digitalWrite(IN3, rightDir == FORWARD);
+  digitalWrite(IN4, rightDir == BACKWARD);
 }
 
 void loop() {
-  long distance = getDistanceCM();
-  if (distance == -1) {
-    ultrasonicFailureCount++;
-    Serial.println("[ERROR] Ultrasonic sensor failed to respond.");
-    if (ultrasonicFailureCount >= maxSensorFailures) {
-      Serial.println("[CRITICAL] Too many ultrasonic failures. Stopping.");
-      stopMotors();
-      while (true);  // Hard stop
-    }
-    delay(200);
-    return;
-  } else {
-    ultrasonicFailureCount = 0;
+  bool onLineL = digitalRead(LEFT_SENSOR)  == LOW;
+  bool onLineR = digitalRead(RIGHT_SENSOR) == LOW;
+
+  if (onLineL && onLineR) {
+    // both sensors see line → go straight
+    drive(BASE_SPEED, FORWARD, BASE_SPEED, FORWARD);
   }
-
-  bool leftIR = isLineUnderSensor(irLeft);
-  bool rightIR = isLineUnderSensor(irRight);
-  String color = readColor();
-
-  logStatus(distance, leftIR, rightIR, color);
-  checkIfStuck(distance, leftIR, rightIR);
-
-  // Color-based logic
-  if (color == "RED") {
-    Serial.println("[COLOR] RED → Stopping");
-    stopMotors();
-    delay(2000);
-    return;
-  } else if (color == "GREEN") {
-    Serial.println("[COLOR] GREEN → Boosting forward");
-    moveForward();
-    delay(800);
-    return;
-  } else if (color == "BLUE") {
-    Serial.println("[COLOR] BLUE → Turning right");
-    turnRight();
-    delay(500);
-    return;
+  else if (!onLineL && onLineR) {
+    // left sensor off line → spin left in place
+    drive(TURN_SPEED, BACKWARD, TURN_SPEED, FORWARD);
   }
-
-  // Obstacle avoidance
-  if (distance < obstacleThreshold) {
-    Serial.println("[!] Obstacle detected. Avoiding...");
-
-    // Sweep servo to scan for open direction
-    for (int angle = 60; angle <= 120; angle += 15) {
-      myServo.write(angle);
-      delay(200);
-      long scanDist = getDistanceCM();
-      Serial.print("[Servo Scan] Angle: "); Serial.print(angle);
-      Serial.print(" Distance: "); Serial.println(scanDist);
-    }
-    myServo.write(90); // Re-center
-    avoidObstacle();
-    return;
+  else if (onLineL && !onLineR) {
+    // right sensor off line → spin right in place
+    drive(TURN_SPEED, FORWARD, TURN_SPEED, BACKWARD);
   }
-
-  // Line following logic
-  if (!leftIR && !rightIR) {
-    Serial.println("[✓] On line. Moving forward.");
-    moveForward();
-    wasMoving = true;
-    lastMoveTime = millis();
-  } else if (!leftIR && rightIR) {
-    Serial.println("[→] Adjusting left.");
-    turnLeft();
-    wasMoving = true;
-    lastMoveTime = millis();
-  } else if (leftIR && !rightIR) {
-    Serial.println("[←] Adjusting right.");
-    turnRight();
-    wasMoving = true;
-    lastMoveTime = millis();
-  } else {
-    Serial.println("[X] Line lost. Attempting recovery...");
-    recoverLine();
+  else {
+    // lost the line entirely → back up
+    drive(REVERSE_SPEED, BACKWARD, REVERSE_SPEED, BACKWARD);
   }
-
-  delay(100);
 }
