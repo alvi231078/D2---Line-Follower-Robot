@@ -87,6 +87,6 @@ If the optional TCS3200 color sensor is connected, the robot also responds to co
 |-----------------------------|----------------------------------|----------------------------------|
 | **Md Ratul Ahmed Alvi**     | Electronics Engineering Student  | Hochschule Hamm-Lippstadt        |
 | **Md Jubair Salehin Razin** | Electronics Engineering Student  | Hochschule Hamm-Lippstadt        |
-| **Faysal Ahmed Tonmoy**     | Electronics Engineering Student  | Hochschule Hamm-Lippstadt        |
+| **Faysal Ahammed Tonmoy**     | Electronics Engineering Student  | Hochschule Hamm-Lippstadt        |
 | **Soaib Ferdous**                   | Electronics Engineering Student  | Hochschule Hamm-Lippstadt        |
 
