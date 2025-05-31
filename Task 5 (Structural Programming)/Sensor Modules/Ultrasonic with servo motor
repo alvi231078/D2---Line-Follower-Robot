@@ -1,0 +1,62 @@
+#include <Servo.h>
+
+// Servo and ultrasonic pins
+const int SERVO_PIN = 9;
+const int TRIG_PIN = 12;
+const int ECHO_PIN = 13;
+
+// Servo object
+Servo neckServo;
+
+// Variables
+int distance = 0;
+
+void setup() {
+  Serial.begin(9600);
+  neckServo.attach(SERVO_PIN);
+
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+
+  Serial.println("Testing Servo + Ultrasonic Sensor...");
+}
+
+void loop() {
+  // Sweep from 0 to 180 degrees
+  for (int angle = 0; angle <= 180; angle += 30) {
+    neckServo.write(angle);
+    delay(500);
+    distance = measureDistance();
+    Serial.print("Angle: ");
+    Serial.print(angle);
+    Serial.print("° | Distance: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+  }
+
+  // Sweep back from 180 to 0 degrees
+  for (int angle = 180; angle >= 0; angle -= 30) {
+    neckServo.write(angle);
+    delay(500);
+    distance = measureDistance();
+    Serial.print("Angle: ");
+    Serial.print(angle);
+    Serial.print("° | Distance: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+  }
+
+  delay(1000);
+}
+
+int measureDistance() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000); // Timeout at 30ms
+  if (duration == 0) return 0; // No echo
+  return duration * 0.034 / 2; // Convert to cm
+}
