@@ -7,16 +7,16 @@ const int COLOR_OUT = A4;
 const int COLOR_LED = A5;
 
 // Color frequency readings
-int redFrequency = 0;
-int greenFrequency = 0;
-int blueFrequency = 0;
+int redFreq = 0;
+int greenFreq = 0;
+int blueFreq = 0;
+String detectedColor = "UNKNOWN";
 
 void setup() {
-  // Initialize Serial Monitor
   Serial.begin(9600);
-  Serial.println("Testing Color Sensor...");
+  Serial.println("Testing Accurate Color Detection...");
 
-  // Set pin modes
+  // Pin setup
   pinMode(COLOR_S0, OUTPUT);
   pinMode(COLOR_S1, OUTPUT);
   pinMode(COLOR_S2, OUTPUT);
@@ -24,11 +24,11 @@ void setup() {
   pinMode(COLOR_LED, OUTPUT);
   pinMode(COLOR_OUT, INPUT);
 
-  // Set frequency scaling to 20% for better stability
+  // Set frequency scaling to 20%
   digitalWrite(COLOR_S0, HIGH);
   digitalWrite(COLOR_S1, LOW);
 
-  // Turn on the LED
+  // Turn on sensor LED
   digitalWrite(COLOR_LED, HIGH);
 }
 
@@ -36,28 +36,55 @@ void loop() {
   // RED
   digitalWrite(COLOR_S2, LOW);
   digitalWrite(COLOR_S3, LOW);
-  redFrequency = pulseIn(COLOR_OUT, LOW);
-  delay(100);
+  redFreq = pulseIn(COLOR_OUT, LOW);
+  delay(50);
 
   // GREEN
   digitalWrite(COLOR_S2, HIGH);
   digitalWrite(COLOR_S3, HIGH);
-  greenFrequency = pulseIn(COLOR_OUT, LOW);
-  delay(100);
+  greenFreq = pulseIn(COLOR_OUT, LOW);
+  delay(50);
 
   // BLUE
   digitalWrite(COLOR_S2, LOW);
   digitalWrite(COLOR_S3, HIGH);
-  blueFrequency = pulseIn(COLOR_OUT, LOW);
-  delay(100);
+  blueFreq = pulseIn(COLOR_OUT, LOW);
+  delay(50);
 
-  // Print values
-  Serial.print("Red: ");
-  Serial.print(redFrequency);
-  Serial.print(" | Green: ");
-  Serial.print(greenFrequency);
-  Serial.print(" | Blue: ");
-  Serial.println(blueFrequency);
+  // Determine color
+  detectedColor = detectColor(redFreq, greenFreq, blueFreq);
 
-  delay(300); // slow down output
+  // Print results
+  Serial.print("R: ");
+  Serial.print(redFreq);
+  Serial.print(" | G: ");
+  Serial.print(greenFreq);
+  Serial.print(" | B: ");
+  Serial.print(blueFreq);
+  Serial.print(" --> Color: ");
+  Serial.println(detectedColor);
+
+  delay(300);
+}
+
+String detectColor(int r, int g, int b) {
+  // Avoid false readings
+  if (r == 0 || g == 0 || b == 0) return "NO COLOR";
+
+  // Use relative comparison
+  if (r < g && r < b && g > b * 1.2) {
+    return "BLUE";
+  } else if (g < r && g < b && r > b * 1.2) {
+    return "RED";
+  } else if (b < r && b < g && g > r * 0.8) {
+    return "GREEN";
+  } else if (r < 120 && g < 120 && b < 120) {
+    return "BLACK";
+  } else if (r > 200 && g > 200 && b > 200) {
+    return "WHITE";
+  } else if (r < b && g < b) {
+    return "YELLOW";
+  } else {
+    return "UNKNOWN";
+  }
 }
