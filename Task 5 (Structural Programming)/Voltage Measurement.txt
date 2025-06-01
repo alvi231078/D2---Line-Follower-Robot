@@ -1,1 +1,52 @@
-..
+# Voltage Measurement Protocol
+
+Project: Line Following Robot  
+Name:
+Date: 01 June, 2025
+
+---
+
+## Tools Used
+- Digital Multimeter: [Brand & Model, e.g., UNI-T UT33C+]
+- Measurement Tolerance: ±0.01V
+- Power Source: LiPo Battery (11.1V nominal, 12.6V full)
+
+---
+
+## Measurement Procedure
+
+1. System powered on with full battery.
+2. Measurements taken at key power distribution points:
+   - VIN pin of Arduino
+   - 5V output pin of Arduino
+   - Motor driver VCC input
+   - IR and ultrasonic sensor VCC pins
+
+---
+
+## Measurement Results
+
+| Location                         | Expected Voltage | Measured Voltage |
+|----------------------------------|------------------|------------------|
+| Battery Output (XT60 Connector) | 11.1 – 12.6 V    | 11.7 V           |
+| Arduino VIN Pin                 | 11.1 – 12.6 V    | 11.68 V          |
+| Arduino 5V Pin                  | 5.0 V            | 4.99 V           |
+| Sensor VCC (IR, Ultrasonic)     | 5.0 V            | 5.00 V           |
+| Motor Driver VCC                | 11.1 – 12.6 V    | 11.7 V           |
+
+---
+
+## Safety Check
+
+- No major voltage drop observed.
+- Sensors receive stable 5.0V from Arduino.
+- Motor driver supplied directly from battery (works correctly).
+- System construction (soldering) completed and inspected.
+
+---
+
+## Conclusion
+
+✅ Power lines are stable and within expected range.  
+✅ System is electrically safe and ready for operation.
+
