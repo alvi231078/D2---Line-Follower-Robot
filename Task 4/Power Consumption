@@ -1,0 +1,12 @@
+Component,Voltage (V),Current (mA),Power (W)
+Arduino Uno,5,50,0.25
+ESP32,3.3,160,0.528
+Ultrasonic Sensor (HC-SR04),5,15,0.075
+IR Sensor x2,5,20,0.1
+Color Sensor (TCS3200),5,20,0.1
+Breadboard (passive),-,0,0.0
+DC Motor x2,6,400,2.4
+Wheel x2,-,0,0.0
+Front Wheel (Caster),-,0,0.0
+Li-Po Battery,7.4,-,0.0
+TOTAL,,,3.4530000000000003
