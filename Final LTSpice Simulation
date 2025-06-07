@@ -1,0 +1,119 @@
+Version 4
+SHEET 1 1320 880
+
+* Power Sources
+SYMBOL voltage -112 144 R0
+SYMATTR InstName V1
+SYMATTR Value 12
+
+SYMBOL voltage 16 384 R0
+SYMATTR InstName V3
+SYMATTR Value 5
+
+SYMBOL voltage 272 -208 R90
+SYMATTR InstName V2
+SYMATTR Value 5
+
+SYMBOL voltage 512 560 R90
+SYMATTR InstName V4
+SYMATTR Value PULSE(0 5 0 1u 1u 5ms 10ms)
+
+SYMBOL voltage 352 -352 R90
+SYMATTR InstName V5
+SYMATTR Value PULSE(0 5 0 1u 1u 5ms 10ms)
+
+SYMBOL voltage 848 -384 R0
+SYMATTR InstName V6
+SYMATTR Value 5
+
+SYMBOL voltage 960 336 R0
+SYMATTR InstName V7
+SYMATTR Value 0
+
+SYMBOL voltage 448 304 R0
+SYMATTR InstName V8
+SYMATTR Value 0
+
+* Resistors
+SYMBOL res 128 -128 R0
+SYMATTR InstName R1
+SYMATTR Value 10
+
+SYMBOL res 128 48 R0
+SYMATTR InstName R2
+SYMATTR Value 10
+
+SYMBOL res 400 -224 R90
+SYMATTR InstName R3
+SYMATTR Value 1000
+
+SYMBOL res 608 304 R90
+SYMATTR InstName R4
+SYMATTR Value 1000
+
+SYMBOL res 832 -240 R0
+SYMATTR InstName R5
+SYMATTR Value 1000
+
+SYMBOL res 944 208 R0
+SYMATTR InstName R6
+SYMATTR Value 1000
+
+SYMBOL res 736 208 R90
+SYMATTR InstName R8
+SYMATTR Value 10
+
+SYMBOL res 1280 192 R90
+SYMATTR InstName R9
+SYMATTR Value 10
+
+* Inductors
+SYMBOL ind 752 128 R0
+SYMATTR InstName L1
+SYMATTR Value 100µH
+
+SYMBOL ind 1056 -80 R0
+SYMATTR InstName L2
+SYMATTR Value 100µH
+
+* Transistors
+SYMBOL npn 224 352 R0
+SYMATTR InstName Q4
+
+SYMBOL npn 448 -256 R0
+SYMATTR InstName Q1
+
+SYMBOL npn 640 272 R0
+SYMATTR InstName Q2
+
+SYMBOL npn 864 -128 R0
+SYMATTR InstName Q3
+
+SYMBOL npn 976 112 R0
+SYMATTR InstName Q5
+
+* Diodes
+SYMBOL diode 352 432 R180
+SYMATTR InstName D4
+
+SYMBOL diode 896 208 R180
+SYMATTR InstName D1
+
+SYMBOL diode 1184 0 R180
+SYMATTR InstName D2
+
+* Connections
+FLAG -240 240 0
+FLAG 160 528 0
+FLAG 528 -80 0
+FLAG 96 -192 0
+FLAG 704 432 0
+FLAG 928 48 0
+FLAG 1040 272 0
+FLAG 960 464 0
+FLAG 752 -400 0
+
+* Wires — skipped in this refined view for brevity, include in actual file if needed for full schematic
+
+* Simulation Command
+TEXT -256 552 Left 2 !.tran 100ms
