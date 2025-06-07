@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>clock t;  // global clock
+const int ObstacleThreshold = 15; // cm
+int currentDistance; // from ultrasonic
+bool lineDetected;   // both sensors LOW (■)
+</declaration>
+	<template>
+		<name x="5" y="5">Template</name>
+		<declaration>// Place local declarations here.
+</declaration>
+		<location id="id0" x="-272" y="-229">
+			<name x="-282" y="-263">Start</name>
+		</location>
+		<location id="id1" x="-272" y="-93">
+			<name x="-255" y="-102">On_Road</name>
+		</location>
+		<location id="id2" x="-272" y="25">
+			<name x="-255" y="17">Offroad</name>
+			<label kind="invariant" x="-263" y="34">t &lt;= 400</label>
+		</location>
+		<location id="id3" x="-272" y="144">
+			<name x="-255" y="136">Reroute</name>
+		</location>
+		<location id="id4" x="-272" y="255">
+			<name x="-247" y="246">On_Road</name>
+		</location>
+		<location id="id5" x="-272" y="357">
+			<name x="-255" y="349">Scanning</name>
+			<label kind="invariant" x="-282" y="374">t &lt;= 1000</label>
+		</location>
+		<init ref="id0"/>
+		<transition id="id6">
+			<source ref="id5"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-551" y="323">t &gt;= 600 &amp;&amp; t &lt;= 1000</label>
+			<label kind="synchronisation" x="-551" y="340">Scanning_complete!</label>
+			<nail x="-569" y="357"/>
+			<nail x="-569" y="144"/>
+			<nail x="-331" y="144"/>
+		</transition>
+		<transition id="id7">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-272" y="272">currentDistance &lt;= ObstacleThreshold</label>
+			<label kind="synchronisation" x="-272" y="289">Obstacle_detected!</label>
+		</transition>
+		<transition id="id8">
+			<source ref="id3"/>
+			<target ref="id4"/>
+			<label kind="guard" x="-272" y="187">currentDistance &lt;= ObstacleThreshold</label>
+			<label kind="synchronisation" x="-272" y="204">Line_detected!</label>
+		</transition>
+		<transition id="id9">
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-272" y="50">t &gt;= 200 &amp;&amp; t &lt;= 400</label>
+			<label kind="synchronisation" x="-272" y="67">Car_stops!</label>
+			<label kind="assignment" x="-272" y="84">t := 0</label>
+		</transition>
+		<transition id="id10">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-272" y="-68">lineDetected == false</label>
+			<label kind="synchronisation" x="-272" y="-51">Line_not_detected!</label>
+		</transition>
+		<transition id="id11">
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-272" y="-195">lineDetected == true &amp;&amp; currentDistance &gt; ObstacleThreshold</label>
+			<label kind="synchronisation" x="-272" y="-178">Car_move_fwd!</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+Process = Template();
+// List one or more processes to be composed into a system.
+system Process;
+</system>
+	<queries>
+		<query>
+			<formula/>
+			<comment/>
+		</query>
+	</queries>
+</nta>
