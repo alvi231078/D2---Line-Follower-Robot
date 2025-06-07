@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.6//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_6.dtd'>
+<nta>
+	<declaration>clock x;
+int distance;
+int color;
+</declaration>
+	<template>
+		<name x="5" y="5">Robot</name>
+		<declaration>// Place local declarations here.
+</declaration>
+		<location id="id0" x="0" y="-221">
+			<name x="-10" y="-255">start</name>
+		</location>
+		<location id="id1" x="0" y="17">
+			<name x="17" y="0">ObstacleDetected</name>
+			<label kind="invariant" x="25" y="17">x &lt;= 1</label>
+			<label kind="comments" x="85" y="25">Reason: In the code, after detecting an obstacle, it waits 200 ms (~1 UPPAAL time unit here) before moving to the next state (ColorDetection).</label>
+		</location>
+		<location id="id2" x="0" y="136">
+			<name x="17" y="119">ColorDetection</name>
+			<label kind="comments" x="85" y="136">Reason: This is a fast logic step (no wait). It immediately decides based on color — no need to restrict duration.</label>
+		</location>
+		<location id="id3" x="-289" y="289">
+			<name x="-289" y="306">RedObstacle</name>
+			<label kind="invariant" x="-272" y="280">x &lt;= 3</label>
+			<label kind="comments" x="-212" y="272">Reason: The robot waits 3 “time units” (e.g., servo scanning + rerouting delay in your code) before returning to line following.</label>
+		</location>
+		<location id="id4" x="0" y="391">
+			<name x="-26" y="408">BlueObstacle</name>
+			<label kind="invariant" x="16" y="357">x &lt;= 2</label>
+			<label kind="comments" x="76" y="382">Robot tries to push forward past the obstacle for 2 time units (shorter than red rerouting).</label>
+		</location>
+		<location id="id5" x="0" y="-102">
+			<name x="17" y="-127">LineFollowing</name>
+			<label kind="comments" x="85" y="-110">Reason: The robot can follow the line indefinitely until an obstacle is detected.</label>
+		</location>
+		<init ref="id0"/>
+		<transition id="id6">
+			<source ref="id3"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-280" y="-42">x &gt;= 3</label>
+			<label kind="assignment" x="-280" y="-59">distance = 100, color = 0</label>
+			<label kind="comments" x="-280" y="-8">Rerouted successfully.</label>
+			<nail x="-289" y="136"/>
+			<nail x="-289" y="-85"/>
+		</transition>
+		<transition id="id7">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-323" y="408">x &gt;= 2</label>
+			<label kind="assignment" x="-323" y="391">distance = 100, color = 0</label>
+			<label kind="comments" x="-382" y="110">Pushed past obstacle.</label>
+			<nail x="-391" y="391"/>
+			<nail x="-391" y="-110"/>
+		</transition>
+		<transition id="id8">
+			<source ref="id2"/>
+			<target ref="id4"/>
+			<label kind="guard" x="8" y="161">color == 2</label>
+			<label kind="comments" x="8" y="187">Blue obstacle → push.</label>
+		</transition>
+		<transition id="id9">
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-153" y="212">color == 1</label>
+			<label kind="comments" x="-178" y="238">Red obstacle → avoid.</label>
+		</transition>
+		<transition id="id10">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="17" y="51">x &gt;= 1</label>
+			<label kind="comments" x="8" y="76">Start checking color after detecting obstacle</label>
+		</transition>
+		<transition id="id11">
+			<source ref="id5"/>
+			<target ref="id1"/>
+			<label kind="guard" x="0" y="-76">distance &lt;= 15</label>
+			<label kind="assignment" x="8" y="-59">x = 0</label>
+			<label kind="comments" x="8" y="-34">An obstacle is detected.</label>
+		</transition>
+		<transition id="id12">
+			<source ref="id0"/>
+			<target ref="id5"/>
+			<label kind="comments" x="8" y="-178">Search for line</label>
+		</transition>
+	</template>
+	<system>Robot = Robot();
+Robot = Robot();  // ← this is probably repeated
+system Robot;
+</system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt; Robot.RedObstacle
+</formula>
+			<comment/>
+		</query>
+	</queries>
+</nta>
