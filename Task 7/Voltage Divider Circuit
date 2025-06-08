@@ -1,0 +1,5 @@
+BAT+ ─┬────[ R1 = 10kΩ ]────┬──── A6 (Arduino analog input)
+      │                     │
+     [Battery]           [ R2 = 5kΩ ]
+      │                     │
+     GND ───────────────────┘
