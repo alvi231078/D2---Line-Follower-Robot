@@ -1,1 +1,32 @@
+Define Global Scope: 
+
+const int VOLTAGE_PIN = A6;
+const float MAX_VOLTAGE = 8.4;
+const float MIN_VOLTAGE = 6.0;
+float voltageRatio = 1.0;
+
+
+
+Inside loop(), update ratio:
+
+
+int rawVoltage = analogRead(VOLTAGE_PIN);
+float measuredVoltage = (rawVoltage / 1023.0) * 5.0 * (15.0 / 5.0);  // based on resistor divider
+voltageRatio = constrain((measuredVoltage - MIN_VOLTAGE) / (MAX_VOLTAGE - MIN_VOLTAGE), 0.5, 1.0);
+
+
+Replacing Static Speeds with Scaled Ones: 
+
+
+#define BASE_SPEED_RAW     80
+#define TURN_SPEED_RAW     75
+#define REVERSE_SPEED_RAW  65
+#define SEARCH_SPEED_RAW   60
+
+int BASE_SPEED    = BASE_SPEED_RAW * voltageRatio;
+int TURN_SPEED    = TURN_SPEED_RAW * voltageRatio;
+int REVERSE_SPEED = REVERSE_SPEED_RAW * voltageRatio;
+int SEARCH_SPEED  = SEARCH_SPEED_RAW * voltageRatio;
+
+
 
