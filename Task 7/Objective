@@ -1,1 +1,7 @@
+The purpose of this task is to ensure that our robot behaves consistently and reliably under different battery levels.
 
+Without adaptation:
+	•	Motors slow down 
+	•	Sensors behave erratically 
+	•	Line following and obstacle avoidance degrade 
+ So, we implemented a voltage-aware optimization system that adjusts behavior in real time based on battery level.
