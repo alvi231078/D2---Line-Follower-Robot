@@ -1,75 +1,66 @@
-# Line Follower Robot with Motor Driver and IR Sensors
+Line Follower Robot with Motor Driver and IR Sensors
+This project is a simple yet effective line follower robot using an Arduino, two digital IR sensors, and a motor driver (L298N or L293D) to control two DC motors. The robot is designed to follow a black line on a white surface by reading sensor inputs and adjusting motor behavior accordingly.
 
-This project is a simple line follower robot using two digital IR sensors and a motor driver to control two DC motors (left and right). The robot follows a black line on a white surface by reading sensor inputs and controlling motor speed and direction accordingly.
+Hardware Requirements
+Components
+Arduino Uno or compatible microcontroller
 
----
+2 × DC Motors (Left & Right)
 
-## Hardware Connections
+1 × Motor Driver Module (L298N or L293D)
 
-### Motor Driver Pins
-| Pin | Description             |
-|------|------------------------|
-| 10   | ENA - PWM Motor A (Left Motor Speed Control)   |
-| 11   | ENB - PWM Motor B (Right Motor Speed Control)  |
-| 5    | IN1 - Motor A Input 1 (Left Motor Direction)   |
-| 6    | IN2 - Motor A Input 2 (Left Motor Direction)   |
-| 7    | IN3 - Motor B Input 1 (Right Motor Direction)  |
-| 8    | IN4 - Motor B Input 2 (Right Motor Direction)  |
+2 × Digital IR Sensors (TCRT5000 or similar)
 
-### IR Sensor Pins (Digital)
-| Pin | Description       |
-|------|------------------|
-| 3    | Left IR Sensor    |
-| 4    | Right IR Sensor   |
+Power Supply (Battery pack or USB)
 
----
+Chassis, Wheels, Jumper Wires
+Pin Connections
+Motor Driver
+Arduino Pin	Motor Driver Pin	Description
+10	ENA	Left Motor Speed (PWM)
+11	ENB	Right Motor Speed (PWM)
+5	IN1	Left Motor Direction Control 1
+6	IN2	Left Motor Direction Control 2
+7	IN3	Right Motor Direction Control 1
+8	IN4	Right Motor Direction Control 2
 
-## Speed Settings
+IR Sensors (Digital Output)
+Arduino Pin	Description
+3	Left IR Sensor
+4	Right IR Sensor
 
-| Variable       | Value | Description                  |
-|----------------|-------|------------------------------|
-| `baseSpeed`    | 65    | Normal forward speed (PWM)    |
-| `maxSpeed`     | 90    | Maximum speed (not used in code) |
-| `reverseSpeed` | 60    | Speed when reversing          |
+Speed Settings
+Variable	Value	Description
+baseSpeed	65	Normal forward speed (PWM)
+reverseSpeed	60	Speed used during reversing
+maxSpeed	90	Defined but not used (for future logic)
 
----
+Working Logic
+Both sensors LOW → Robot moves forward
 
-## How It Works
+Left HIGH, Right LOW → Robot turns left
 
-- The robot reads the state of two IR sensors (`leftSensorPin` and `rightSensorPin`).
-- Both sensors LOW: Robot moves forward.
-- Left sensor HIGH, right sensor LOW: Robot turns left.
-- Left sensor LOW, right sensor HIGH: Robot turns right.
-- Both sensors HIGH: Robot reverses to search for the line.
+Left LOW, Right HIGH → Robot turns right
 
----
+Both HIGH → Robot moves backward to relocate the line
 
-## Functions
+This logic helps the robot continuously adjust its path to follow the black line.
 
-- `moveForward(speed)`: Drives both motors forward at the specified speed.
-- `turnLeft(speed)`: Stops left motor and runs right motor forward to turn left.
-- `turnRight(speed)`: Runs left motor forward and stops right motor to turn right.
-- `moveBackward(speed)`: Drives both motors backward at the specified speed.
+Control Functions (Arduino Sketch)
+cpp
+Copy
+Edit
+void moveForward(int speed);   // Runs both motors forward at given speed
+void turnLeft(int speed);      // Stops left motor, runs right motor forward
+void turnRight(int speed);     // Runs left motor, stops right motor
+void moveBackward(int speed);  // Runs both motors in reverse
+These functions are called inside the loop based on sensor readings.
 
----
+Usage Instructions
+Connect motors and IR sensors to the Arduino according to the pinout.
 
-## Usage
+Upload the Arduino sketch (LineFollower.ino) to your microcontroller.
 
-1. Connect your motors and IR sensors as described in the Hardware Connections.
-2. Upload the provided Arduino sketch to your microcontroller.
-3. Place the robot on a black line on a white surface and power it on.
-4. The robot will follow the line by continuously adjusting its motor speeds based on sensor inputs.
+Power the robot and place it on a black line on a white background.
 
----
-
-## Notes
-
-- Make sure your IR sensors are calibrated properly for the surface colors.
-- Adjust `baseSpeed` and `reverseSpeed` values if needed for better line tracking.
-- `maxSpeed` is defined but not used in the current code. You can modify the code to utilize it if required.
-
----
-
-## License
-
-This project is open source and free to use.
+The robot will automatically begin following the line.
