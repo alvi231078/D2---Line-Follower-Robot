@@ -10,25 +10,10 @@ const int IN4 = 8;   // Motor B input 2
 const int LEFT_SENSOR  = 3;
 const int RIGHT_SENSOR = 4;
 
-// Servo and Ultrasonic pins
-const int SERVO_PIN = 9;
-const int TRIG_PIN = 12;
-const int ECHO_PIN = 13;
-
-// Servo positions
-const int SERVO_LEFT = 145;
-const int SERVO_CENTER = 67;
-const int SERVO_RIGHT = 0;
-
 // Speed settings
 const int BASE_SPEED    = 80;   
 const int TURN_SPEED    = 75;   
 const int REVERSE_SPEED = 65;   
-const int SEARCH_SPEED  = 60;   // Speed for line searching
-
-// Distance settings
-const int OBSTACLE_DISTANCE = 15;  // Stop if obstacle within 15cm
-const int MIN_SAFE_DISTANCE = 25;  // Minimum safe distance for path selection
 
 // Sensor interpretation (adjust based on your IR sensors)
 const bool LINE_DETECTED_STATE = false;  // false = LOW means line detected
@@ -40,9 +25,7 @@ const int SENSOR_READ_INTERVAL = 2; // Read sensors every 2ms for better reliabi
 // Variables for non-blocking operation
 unsigned long lastSensorRead = 0;
 unsigned long lastDebugPrint = 0;
-unsigned long lastDistanceCheck = 0;
 const int DEBUG_INTERVAL = 200;    // Print debug info every 200ms
-const int DISTANCE_CHECK_INTERVAL = 50; // Check distance every 50ms
 
 // Sensor state variables with filtering
 bool leftOnLine = false;
@@ -61,27 +44,6 @@ unsigned long rightSensorLastDetected = 0;
 unsigned long leftSensorLastDetected = 0;
 bool rightSensorReliable = true;
 
-// Obstacle avoidance variables
-bool obstacleDetected = false;
-bool isAvoidingObstacle = false;
-bool isSearchingForLine = false;
-int currentDistance = 0;
-
-// Include Servo library
-#include <Servo.h>
-Servo neckServo;
-
-// Robot states
-enum RobotState {
-  LINE_FOLLOWING,
-  OBSTACLE_DETECTED,
-  SCANNING,
-  AVOIDING_OBSTACLE,
-  SEARCHING_LINE
-};
-
-RobotState currentState = LINE_FOLLOWING;
-
 void setup() {
   // Motor pins
   pinMode(ENA, OUTPUT);
@@ -94,19 +56,10 @@ void setup() {
   // IR sensors
   pinMode(LEFT_SENSOR, INPUT);
   pinMode(RIGHT_SENSOR, INPUT);
-  
-  // Ultrasonic sensor
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-
-  // Servo setup
-  neckServo.attach(SERVO_PIN);
-  neckServo.write(SERVO_CENTER);
-  delay(500);
 
   // Serial monitor
   Serial.begin(9600);
-  Serial.println("Line Following Robot with Obstacle Avoidance");
+  Serial.println("Real-time Line Following Robot");
   Serial.println("Initializing...");
   
   stopMotors();
@@ -124,53 +77,16 @@ void loop() {
     lastSensorRead = currentTime;
   }
   
-  // Check distance periodically
-  if (currentTime - lastDistanceCheck >= DISTANCE_CHECK_INTERVAL) {
-    currentDistance = measureDistance();
-    lastDistanceCheck = currentTime;
-  }
+  // Execute line following logic immediately based on current sensor state
+  executeLineFollowing();
   
-  // State machine for robot behavior
-  switch (currentState) {
-    case LINE_FOLLOWING:
-      if (currentDistance <= OBSTACLE_DISTANCE && currentDistance > 0) {
-        currentState = OBSTACLE_DETECTED;
-        Serial.println("STATE: Obstacle detected!");
-      } else {
-        executeLineFollowing();
-      }
-      break;
-      
-    case OBSTACLE_DETECTED:
-      stopMotors();
-      delay(200);
-      currentState = SCANNING;
-      break;
-      
-    case SCANNING:
-      performObstacleScan();
-      break;
-      
-    case AVOIDING_OBSTACLE:
-      // Continue moving in chosen direction until obstacle is cleared
-      if (currentDistance > MIN_SAFE_DISTANCE || currentDistance == 0) {
-        currentState = SEARCHING_LINE;
-        Serial.println("STATE: Obstacle cleared, searching for line");
-      }
-      break;
-      
-    case SEARCHING_LINE:
-      searchForLine();
-      break;
-  }
-  
-  // Debug output at reasonable interval
+  // Debug output at reasonable interval (don't flood serial)
   if (currentTime - lastDebugPrint >= DEBUG_INTERVAL) {
     printDebugInfo();
     lastDebugPrint = currentTime;
   }
   
-  delay(LOOP_DELAY);
+  delay(LOOP_DELAY);  // Small delay for stability
 }
 
 void readSensors() {
@@ -216,128 +132,12 @@ void readSensors() {
     rightSensorLastDetected = millis();
     rightSensorReliable = true;
   } else if(millis() - rightSensorLastDetected > 5000) {
+    // If right sensor hasn't detected anything for 5 seconds, mark as unreliable
     rightSensorReliable = false;
   }
   
   // Update sample index
   sampleIndex = (sampleIndex + 1) % SENSOR_SAMPLES;
-}
-
-int measureDistance() {
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-  
-  long duration = pulseIn(ECHO_PIN, HIGH, 30000); // 30ms timeout
-  if (duration == 0) return 0; // No echo received
-  
-  int distance = duration * 0.034 / 2;
-  return distance;
-}
-
-void performObstacleScan() {
-  Serial.println("Scanning for best path...");
-  
-  // Scan left
-  neckServo.write(SERVO_LEFT);
-  delay(300);
-  int leftDistance = measureDistance();
-  
-  // Scan right  
-  neckServo.write(SERVO_RIGHT);
-  delay(300);
-  int rightDistance = measureDistance();
-  
-  // Return to center
-  neckServo.write(SERVO_CENTER);
-  delay(300);
-  
-  Serial.print("Left: ");
-  Serial.print(leftDistance);
-  Serial.print("cm, Right: ");
-  Serial.print(rightDistance);
-  Serial.println("cm");
-  
-  // Choose direction with more space
-  if (leftDistance > rightDistance && leftDistance > MIN_SAFE_DISTANCE) {
-    Serial.println("Turning left to avoid obstacle");
-    avoidObstacleLeft();
-  } else if (rightDistance > MIN_SAFE_DISTANCE) {
-    Serial.println("Turning right to avoid obstacle");
-    avoidObstacleRight();
-  } else {
-    Serial.println("No clear path, backing up");
-    moveBackward();
-    delay(800);
-    rotateRight(TURN_SPEED);
-    delay(500);
-  }
-  
-  currentState = AVOIDING_OBSTACLE;
-}
-
-void avoidObstacleLeft() {
-  // Turn left and move forward
-  rotateLeft(TURN_SPEED);
-  delay(600);
-  moveForward(BASE_SPEED, BASE_SPEED);
-  delay(800);
-}
-
-void avoidObstacleRight() {
-  // Turn right and move forward
-  rotateRight(TURN_SPEED);
-  delay(600);
-  moveForward(BASE_SPEED, BASE_SPEED);
-  delay(800);
-}
-
-void searchForLine() {
-  // Look for line by rotating slowly
-  static unsigned long searchStartTime = 0;
-  static bool searchDirection = true; // true = right, false = left
-  static bool hasStartedSearch = false;
-  
-  if (!hasStartedSearch) {
-    searchStartTime = millis();
-    hasStartedSearch = true;
-    Serial.println("Starting line search...");
-  }
-  
-  // Check if line is found
-  if (leftOnLine || rightOnLine) {
-    Serial.println("Line found! Resuming line following");
-    stopMotors();
-    delay(200);
-    hasStartedSearch = false;
-    currentState = LINE_FOLLOWING;
-    return;
-  }
-  
-  // If searching for more than 3 seconds, try the other direction
-  if (millis() - searchStartTime > 3000) {
-    searchDirection = !searchDirection;
-    searchStartTime = millis();
-    Serial.println("Changing search direction");
-  }
-  
-  // Search in current direction
-  if (searchDirection) {
-    rotateRight(SEARCH_SPEED);
-  } else {
-    rotateLeft(SEARCH_SPEED);
-  }
-  
-  // If searching for too long (6 seconds total), move forward and try again
-  if (millis() - searchStartTime > 6000) {
-    Serial.println("Line search timeout, moving forward");
-    moveForward(SEARCH_SPEED, SEARCH_SPEED);
-    delay(500);
-    hasStartedSearch = false;
-    searchStartTime = millis();
-  }
 }
 
 void executeLineFollowing() {
@@ -349,6 +149,7 @@ void executeLineFollowing() {
     
   } else if (leftOnLine && !rightOnLine) {
     // Left sensor on line - robot drifted left, turn right immediately
+    // If right sensor is unreliable, use gentler correction
     if (!rightSensorReliable) {
       gentleTurnRight();
     } else {
@@ -361,90 +162,107 @@ void executeLineFollowing() {
     
   } else if (leftOnLine && rightOnLine) {
     // Both sensors on line - intersection, wide line, or perfect center
+    // Move forward but slower to maintain control
     moveForward(BASE_SPEED * 0.6, BASE_SPEED * 0.6);
   }
   
   // Additional logic: If right sensor seems stuck, compensate
   if (!rightSensorReliable && leftOnLine) {
-    moveForwardWithBias(BASE_SPEED, 0.8, 1.0);
+    // Right sensor might be faulty, rely more on left sensor
+    moveForwardWithBias(BASE_SPEED, 0.8, 1.0); // Slightly favor right motor
   }
 }
 
 void printDebugInfo() {
-  Serial.print("State: ");
-  switch(currentState) {
-    case LINE_FOLLOWING: Serial.print("LINE_FOLLOW"); break;
-    case OBSTACLE_DETECTED: Serial.print("OBSTACLE"); break;
-    case SCANNING: Serial.print("SCANNING"); break;
-    case AVOIDING_OBSTACLE: Serial.print("AVOIDING"); break;
-    case SEARCHING_LINE: Serial.print("SEARCHING"); break;
-  }
-  
-  Serial.print(" | Dist: ");
-  Serial.print(currentDistance);
-  Serial.print("cm | L:");
+  Serial.print("L:");
   Serial.print(leftOnLine ? "■" : "□");
   Serial.print(" R:");
   Serial.print(rightOnLine ? "■" : "□");
   
+  // Show sensor reliability
   if (!rightSensorReliable) {
     Serial.print(" [R-FAULT]");
   }
   
-  Serial.println();
+  Serial.print(" | ");
+  
+  // Show action being taken
+  if (!leftOnLine && !rightOnLine) {
+    Serial.println("FORWARD");
+  } else if (leftOnLine && !rightOnLine) {
+    Serial.println(rightSensorReliable ? "TURN RIGHT" : "GENTLE RIGHT");
+  } else if (!leftOnLine && rightOnLine) {
+    Serial.println("TURN LEFT");
+  } else {
+    Serial.println("BOTH ON LINE");
+  }
+  
+  // Raw sensor values for debugging
+  Serial.print("Raw sensors: L=");
+  Serial.print(digitalRead(LEFT_SENSOR));
+  Serial.print(" R=");
+  Serial.println(digitalRead(RIGHT_SENSOR));
 }
 
-// === Motor Control Functions ===
+// === Optimized Motor Control Functions ===
 
 void moveForward(int leftSpeed, int rightSpeed) {
+  // Left motor forward
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   analogWrite(ENA, leftSpeed);
+
+  // Right motor forward
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
   analogWrite(ENB, rightSpeed);
 }
 
-void moveBackward() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  analogWrite(ENA, REVERSE_SPEED);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-  analogWrite(ENB, REVERSE_SPEED);
-}
-
 void turnRight() {
+  // More aggressive right turn for immediate response
+  // Left motor forward at higher speed
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   analogWrite(ENA, TURN_SPEED + 10);
+
+  // Right motor backward for sharp turn
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
   analogWrite(ENB, REVERSE_SPEED);
 }
 
 void turnLeft() {
+  // More aggressive left turn for immediate response
+  // Left motor backward for sharp turn
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
   analogWrite(ENA, REVERSE_SPEED);
+
+  // Right motor forward at higher speed
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
   analogWrite(ENB, TURN_SPEED + 10);
 }
 
 void rotateRight(int speed) {
+  // Left motor forward
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   analogWrite(ENA, speed);
+
+  // Right motor backward
   digitalWrite(IN3, LOW);
   digitalWrite(IN4, HIGH);
   analogWrite(ENB, speed);
 }
 
 void rotateLeft(int speed) {
+  // Left motor backward
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
   analogWrite(ENA, speed);
+
+  // Right motor forward
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
   analogWrite(ENB, speed);
@@ -459,25 +277,33 @@ void stopMotors() {
   analogWrite(ENB, 0);
 }
 
+// === Advanced Functions for Better Control ===
+
 void moveForwardWithBias(int baseSpeed, float leftBias, float rightBias) {
+  // Fine-tune individual motor speeds for micro-corrections
   int leftSpeed = baseSpeed * leftBias;
   int rightSpeed = baseSpeed * rightBias;
+  
   moveForward(leftSpeed, rightSpeed);
 }
 
 void gentleTurnRight() {
+  // Gentler turn - just reduce right motor speed instead of reversing
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
   analogWrite(ENA, BASE_SPEED);
+
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
-  analogWrite(ENB, BASE_SPEED * 0.3);
+  analogWrite(ENB, BASE_SPEED * 0.3);  // Slow down right motor
 }
 
 void gentleTurnLeft() {
+  // Gentler turn - just reduce left motor speed instead of reversing
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
-  analogWrite(ENA, BASE_SPEED * 0.3);
+  analogWrite(ENA, BASE_SPEED * 0.3);  // Slow down left motor
+
   digitalWrite(IN3, HIGH);
   digitalWrite(IN4, LOW);
   analogWrite(ENB, BASE_SPEED);
