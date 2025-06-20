@@ -1,32 +1,104 @@
-Define Global Scope: 
+#include <Servo.h>  // Include Servo library
 
+// ===== Global Scope Variables =====
+
+// Motor driver pins
+const int ENA = 10;
+const int ENB = 11;
+const int IN1 = 5;
+const int IN2 = 6;
+const int IN3 = 7;
+const int IN4 = 8;
+
+// IR sensor pins
+const int LEFT_SENSOR  = 3;
+const int RIGHT_SENSOR = 4;
+
+// Servo and Ultrasonic pins
+const int SERVO_PIN = 9;
+const int TRIG_PIN = 12;
+const int ECHO_PIN = 13;
+
+// Servo positions
+const int SERVO_LEFT = 145;
+const int SERVO_CENTER = 67;
+const int SERVO_RIGHT = 0;
+
+// 🔋 Voltage sensing setup
 const int VOLTAGE_PIN = A6;
 const float MAX_VOLTAGE = 8.4;
 const float MIN_VOLTAGE = 6.0;
 float voltageRatio = 1.0;
 
-
-
-Inside loop(), update ratio:
-
-
-int rawVoltage = analogRead(VOLTAGE_PIN);
-float measuredVoltage = (rawVoltage / 1023.0) * 5.0 * (15.0 / 5.0);  // based on resistor divider
-voltageRatio = constrain((measuredVoltage - MIN_VOLTAGE) / (MAX_VOLTAGE - MIN_VOLTAGE), 0.5, 1.0);
-
-
-Replacing Static Speeds with Scaled Ones: 
-
-
+// ⚙️ Speed settings (scaled dynamically)
 #define BASE_SPEED_RAW     80
 #define TURN_SPEED_RAW     75
 #define REVERSE_SPEED_RAW  65
 #define SEARCH_SPEED_RAW   60
 
-int BASE_SPEED    = BASE_SPEED_RAW * voltageRatio;
-int TURN_SPEED    = TURN_SPEED_RAW * voltageRatio;
-int REVERSE_SPEED = REVERSE_SPEED_RAW * voltageRatio;
-int SEARCH_SPEED  = SEARCH_SPEED_RAW * voltageRatio;
+int BASE_SPEED    = BASE_SPEED_RAW;
+int TURN_SPEED    = TURN_SPEED_RAW;
+int REVERSE_SPEED = REVERSE_SPEED_RAW;
+int SEARCH_SPEED  = SEARCH_SPEED_RAW;
 
+void setup() {
+  // Motor & sensor pin setup
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
 
+  pinMode(LEFT_SENSOR, INPUT);
+  pinMode(RIGHT_SENSOR, INPUT);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(VOLTAGE_PIN, INPUT);
 
+  neckServo.attach(SERVO_PIN);
+  neckServo.write(SERVO_CENTER);
+  delay(500);
+
+  Serial.begin(9600);
+  Serial.println("Line Following Robot with Voltage Optimization");
+  stopMotors();
+  delay(1000);
+}
+
+void loop() {
+  // 🧠 Voltage-Based Optimization
+  int rawVoltage = analogRead(VOLTAGE_PIN);
+  float measuredVoltage = (rawVoltage / 1023.0) * 5.0 * (15.0 / 5.0); // Adjust based on your resistor values
+  voltageRatio = constrain((measuredVoltage - MIN_VOLTAGE) / (MAX_VOLTAGE - MIN_VOLTAGE), 0.5, 1.0);
+
+  BASE_SPEED    = BASE_SPEED_RAW * voltageRatio;
+  TURN_SPEED    = TURN_SPEED_RAW * voltageRatio;
+  REVERSE_SPEED = REVERSE_SPEED_RAW * voltageRatio;
+  SEARCH_SPEED  = SEARCH_SPEED_RAW * voltageRatio;
+
+  // Example usage
+  moveForward(BASE_SPEED, BASE_SPEED);
+
+  delay(100);
+}
+
+// === Motor Control Functions ===
+
+void moveForward(int leftSpeed, int rightSpeed) {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  analogWrite(ENA, leftSpeed);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  analogWrite(ENB, rightSpeed);
+}
+
+void stopMotors() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+}
