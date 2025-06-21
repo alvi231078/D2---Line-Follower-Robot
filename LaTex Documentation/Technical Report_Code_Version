@@ -175,12 +175,12 @@
 			\hline
 			\textbf{Team Member} & \textbf{Commits} \\
 			\hline
-			Faysal Ahammed Tonmoy & 80 \\
+			Faysal Ahammed Tonmoy & 81\\
 			Jubair Salehin Razin & 122 \\
 			Md Ratul Ahmed Alvi & 162 \\
-			Soaib Mahin Ferdous & 26 \\
+			Soaib Mahin Ferdous & 30 \\
 			\hline
-			\textbf{Total} & 376 \\
+			\textbf{Total} & 421 \\
 			\hline
 		\end{tabular}
 		\caption{GitHub Commits by Team Members}
