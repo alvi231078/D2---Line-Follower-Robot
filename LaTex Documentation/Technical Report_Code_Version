@@ -1,0 +1,207 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{float} % For precise float control
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+		T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+	
+	\title{Design and Implementation of a Line Following and Obstacle Avoidance Robot\\ \textbf{\Large (Technical Report)}}
+	
+	\author{
+		\IEEEauthorblockN{
+			Faysal Ahammed Tonmoy, 
+			Jubair Salehin Razin, 
+			Md Ratul Ahmed Alvi, 
+			Soaib Mahin Ferdous}
+		\IEEEauthorblockA{
+			Systems Engineering and Prototyping, BSc Electronic Engineering\\
+			Hochschule Hamm-Lippstadt, Lippstadt, Germany}
+	}
+	
+	\maketitle
+	
+	\begin{abstract}
+		This paper presents the design, development, and implementation of an Arduino-based robot capable of following a black line and avoiding obstacles in its path. The system integrates IR sensors for line detection and an ultrasonic sensor mounted on a servo motor for environmental scanning. The robot’s decision-making algorithm enables smooth path-following while dynamically reacting to obstacles. Both hardware and software components were prototyped virtually before real-world testing. Results show reliable performance in various test scenarios.
+	\end{abstract}
+	
+	\begin{IEEEkeywords}
+		Line follower robot, Obstacle avoidance, Arduino, Servo motor, Ultrasonic sensor
+	\end{IEEEkeywords}
+	
+	\vspace{1em}
+	
+	\section{Introduction}
+	Line-following and obstacle-avoiding robots are fundamental projects in the field of robotics and embedded systems. These robots offer practical insights into sensor integration, motor control, decision-making algorithms, and real-time behavior. Such applications are widely used in industrial automation, delivery robots, and warehouse management systems.
+	
+	This project focuses on the design and development of a mobile robot that can autonomously follow a predefined path while detecting and avoiding obstacles using infrared (IR) and ultrasonic sensors. The integration of hardware and software components was achieved through iterative prototyping, simulation (using Tinkercad), and formal verification using UPPAAL to ensure time-critical responsiveness.
+	
+	The objective was to create a low-cost, Arduino-based robot capable of smart navigation in dynamic environments, with collaborative development managed via Git and GitHub.
+	
+	\section{System Modeling using SysML}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{bdd_robot.png}
+		\caption{SysML Block Definition Diagram (BDD)}
+		\label{fig:sysml_bdd}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{ibd_robot.png}
+		\caption{SysML Internal Block Diagram (IBD)}
+		\label{fig:sysml_ibd}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{sequence_robot.png}
+		\caption{SysML Sequence Diagram for Obstacle Avoidance}
+		\label{fig:sysml_sequence}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{state_machine_robot.png}
+		\caption{SysML State Machine Diagram}
+		\label{fig:sysml_state}
+	\end{figure}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{activity_diagram.png}
+		\caption{SysML Activity Diagram for Robot Behavior}
+		\label{fig:activity_diagram}
+	\end{figure}
+	
+	\section{Prototyping and Design}
+	
+	\subsection{Electronic Components}
+	\begin{itemize}
+		\item Arduino Uno R3
+		\item L298N Motor Driver
+		\item 2 × IR Sensors
+		\item 1 × Ultrasonic Sensor (HC-SR04)
+		\item 1 × Servo Motor (SG90)
+		\item 2 × DC Motors with Wheels
+		\item Chassis, Wires, Breadboard
+	\end{itemize}
+	
+	\subsection{Virtual and Physical Prototypes}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{Tinkercad_simulation.png}
+		\caption{Tinkercad Simulation: Full Circuit Layout}
+		\label{fig:tinkercad}
+	\end{figure}
+	
+	... [description text unchanged] ...
+	
+	\subsection{Assembled Car Design}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{assembled_car.png}
+		\caption{Assembled Robot Car Design}
+		\label{fig:assembled_car}
+	\end{figure}
+	
+	\section{Circuit Design}
+	\begin{itemize}
+		\item IR sensors → pins 2 and 3
+		\item Ultrasonic → TRIG (12), ECHO (13)
+		\item Servo → pin 9
+		\item Motor driver → IN1-IN4: pins 5–8; ENA/ENB: pins 10–11
+	\end{itemize}
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{circuit_diagram.png}
+		\caption{Complete circuit layout of the robot}
+		\label{fig:circuit}
+	\end{figure}
+	
+	\section{Software Implementation}
+	
+	\subsection{UPPAAL Simulation}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{uppaal_simulation.png}
+		\caption{UPPAAL Timed Automata Model for Robot Control}
+		\label{fig:uppaal}
+	\end{figure}
+	
+	\subsection{LTspice Simulation}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{ltspice_simulation.png}
+		\caption{LTspice Motor Driver Circuit Simulation}
+		\label{fig:ltspice}
+	\end{figure}
+	
+	\section{Git Usage and Collaboration}
+	Version control and collaborative development were managed using Git and GitHub.
+	
+	\begin{itemize}
+		\item \textbf{Jubair Salehin Razin}: Physical hardware assembly, component placement, chassis design
+		\item \textbf{Md Ratul Ahmed Alvi}: Arduino logic, wiring, testing, and diagramming
+		\item \textbf{Faysal Ahammed Tonmoy}: Documentation, circuit design, integration
+		\item \textbf{Soaib Mahin Ferdous}: Supporting diagrams, documentation, modeling
+	\end{itemize}
+	
+	\begin{table}[H]
+		\centering
+		\begin{tabular}{l|c}
+			\hline
+			\textbf{Team Member} & \textbf{Commits} \\
+			\hline
+			Faysal Ahammed Tonmoy & 80 \\
+			Jubair Salehin Razin & 122 \\
+			Md Ratul Ahmed Alvi & 162 \\
+			Soaib Mahin Ferdous & 26 \\
+			\hline
+			\textbf{Total} & 376 \\
+			\hline
+		\end{tabular}
+		\caption{GitHub Commits by Team Members}
+		\label{table:commit}
+	\end{table}
+	
+	\section{Key Achievements}
+	\begin{itemize}
+		\item Built a reliable, intelligent robot system
+		\item Designed and printed all mechanical parts in SolidWorks
+		\item Simulated logic and hardware in Tinkercad, UPPAAL, LTspice
+		\item Documented system architecture using SysML
+		\item Worked collaboratively using GitHub
+	\end{itemize}
+	
+	\section{Conclusion and Future Work}
+	The robot successfully integrates sensor data and motor control to follow a black line while avoiding obstacles. Future enhancements may include path memory, camera-based vision, Bluetooth control, and autonomous charging.
+	
+	\section*{Acknowledgment}
+	We would like to thank our professor and lab assistants for their guidance and support throughout the development of this project.
+	
+	\begin{thebibliography}{00}
+		\bibitem{arduino} Arduino Documentation. \url{https://www.arduino.cc/en/Guide}
+		\bibitem{tinkercad} Tinkercad Simulation. \url{https://www.tinkercad.com}
+		\bibitem{uppaal} Uppaal Model Checker. \url{http://www.uppaal.org/}
+		\bibitem{ltspice} LTspice Simulator. \url{https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html}
+	\end{thebibliography}
+	
+	\section*{Declaration of Originality}
+	We hereby declare that this report is our own work and that we have acknowledged all sources used.\\
+	
+	\textbf{Team Members:} Faysal Ahammed Tonmoy, Jubair Salehin Razin, Md Ratul Ahmed Alvi, Soaib Mahin Ferdous
+	
+\end{document}
