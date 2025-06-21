@@ -20,13 +20,13 @@
 	
 	\author{
 		\IEEEauthorblockN{
-			Faysal Ahammed Tonmoy, 
+		Team D2:	Faysal Ahammed Tonmoy, 
 			Jubair Salehin Razin, 
 			Md Ratul Ahmed Alvi, 
-			Soaib Mahin Ferdous}
+			Soaib Ferdous}
 		\IEEEauthorblockA{
-			Systems Engineering and Prototyping, BSc Electronic Engineering\\
-			Hochschule Hamm-Lippstadt, Lippstadt, Germany}
+			Prototyping and Systems Engineering\\ BSc Electronic Engineering\\
+			Hochschule Hamm-Lippstadt\\ Lippstadt, Germany}
 	}
 	
 	\maketitle
@@ -106,7 +106,6 @@
 		\label{fig:tinkercad}
 	\end{figure}
 	
-	... [description text unchanged] ...
 	
 	\subsection{Assembled Car Design}
 	\begin{figure}[H]
@@ -115,6 +114,11 @@
 		\caption{Assembled Robot Car Design}
 		\label{fig:assembled_car}
 	\end{figure}
+	
+	The fully assembled robot car was modeled and visualized in SolidWorks 3D CAD software before physical construction. Each component—including the chassis, motor mounts, battery cover, sensor holders, and servo brackets—was individually designed to exact dimensions. These designs were then assembled virtually in SolidWorks to verify spatial alignment, mechanical fit, and wiring paths.
+	
+	This digital mockup allowed us to detect and resolve potential mechanical interferences before 3D printing. The rendered model accurately represents the real-world robot structure and showcases the integration of all electronic and mechanical parts into a compact and modular design.
+	
 	
 	\section{Circuit Design}
 	\begin{itemize}
@@ -133,7 +137,7 @@
 	
 	\section{Software Implementation}
 	
-	\subsection{UPPAAL Simulation}
+	\subsection{A. UPPAAL Simulation}
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{uppaal_simulation.png}
@@ -141,7 +145,10 @@
 		\label{fig:uppaal}
 	\end{figure}
 	
-	\subsection{LTspice Simulation}
+	To formally verify the robot’s behavior, a timed automata model was created in UPPAAL. The simulation captures key control states such as line following, obstacle detection, and turning logic with time constraints. By modeling transitions and clock conditions, we validated the robot’s response timing to avoid delays or missed decisions during operation. This ensures reliability in real-world dynamic scenarios.
+	
+	
+	\subsection{B. LTspice Simulation}
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=\linewidth, height=0.4\textheight, keepaspectratio]{ltspice_simulation.png}
@@ -149,14 +156,17 @@
 		\label{fig:ltspice}
 	\end{figure}
 	
+	The motor driver circuit was simulated in LTspice to ensure proper voltage levels, current flow, and switching behavior before hardware implementation. This simulation helped verify the performance of the L298N driver in handling bidirectional DC motor control, confirming safe operation under load and validating protective components such as flyback diodes.
+	
+	
 	\section{Git Usage and Collaboration}
 	Version control and collaborative development were managed using Git and GitHub.
 	
 	\begin{itemize}
-		\item \textbf{Jubair Salehin Razin}: Physical hardware assembly, component placement, chassis design
-		\item \textbf{Md Ratul Ahmed Alvi}: Arduino logic, wiring, testing, and diagramming
-		\item \textbf{Faysal Ahammed Tonmoy}: Documentation, circuit design, integration
-		\item \textbf{Soaib Mahin Ferdous}: Supporting diagrams, documentation, modeling
+		\item \textbf{Jubair Salehin Razin}: Simulation,validation testing, Wiring and Software Implementation,Physical hardware assembly, component placement, chassis design. 
+		\item \textbf{Md Ratul Ahmed Alvi}: Arduino logic, Program Development / Algorithm Development, wiring, testing, and diagramming
+		\item \textbf{Faysal Ahammed Tonmoy}: Documentation, circuit design, integration and 3D Design, LTDpice Simulation, Wiring, LaTex Documentation.
+		\item \textbf{Soaib Mahin Ferdous}: Supporting diagrams, documentation, modeling, Wiring.
 	\end{itemize}
 	
 	\begin{table}[H]
@@ -202,6 +212,11 @@
 	\section*{Declaration of Originality}
 	We hereby declare that this report is our own work and that we have acknowledged all sources used.\\
 	
-	\textbf{Team Members:} Faysal Ahammed Tonmoy, Jubair Salehin Razin, Md Ratul Ahmed Alvi, Soaib Mahin Ferdous
+
+Faysal Ahammed Tonmoy\\
+Jubair Salehin Razin\\
+Md Ratul Ahmed Alvi\\
+Soaib Mahin Ferdous
+
 	
 \end{document}
