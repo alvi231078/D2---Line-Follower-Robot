@@ -1,0 +1,64 @@
+// === TCS3200 Color Sensor Pin Definitions ===
+const int COLOR_S0 = A0;   // Frequency scaling pin 1
+const int COLOR_S1 = A1;   // Frequency scaling pin 2
+const int COLOR_S2 = A2;   // Photodiode filter selector 1
+const int COLOR_S3 = A3;   // Photodiode filter selector 2
+const int COLOR_OUT = A4;  // Frequency output from sensor
+const int COLOR_LED = A5;  // LED control pin
+
+// === Variables to Store Color Frequency Values ===
+int redFrequency = 0;
+int greenFrequency = 0;
+int blueFrequency = 0;
+
+void setup() {
+  // === Begin Serial Communication ===
+  Serial.begin(9600);
+  Serial.println("Testing Color Sensor...");
+
+  // === Set Pin Modes ===
+  pinMode(COLOR_S0, OUTPUT);
+  pinMode(COLOR_S1, OUTPUT);
+  pinMode(COLOR_S2, OUTPUT);
+  pinMode(COLOR_S3, OUTPUT);
+  pinMode(COLOR_OUT, INPUT);   // Output from sensor
+  pinMode(COLOR_LED, OUTPUT);  // LED to illuminate object
+
+  // === Set Frequency Scaling to 20% for Stable Output ===
+  // This reduces the output frequency, making it easier to measure
+  digitalWrite(COLOR_S0, HIGH);
+  digitalWrite(COLOR_S1, LOW);
+
+  // === Turn On LED Light ===
+  digitalWrite(COLOR_LED, HIGH);
+}
+
+void loop() {
+  // === Read RED Component ===
+  digitalWrite(COLOR_S2, LOW);
+  digitalWrite(COLOR_S3, LOW);
+  redFrequency = pulseIn(COLOR_OUT, LOW);  // Measures duration of LOW pulse
+  delay(100);
+
+  // === Read GREEN Component ===
+  digitalWrite(COLOR_S2, HIGH);
+  digitalWrite(COLOR_S3, HIGH);
+  greenFrequency = pulseIn(COLOR_OUT, LOW);
+  delay(100);
+
+  // === Read BLUE Component ===
+  digitalWrite(COLOR_S2, LOW);
+  digitalWrite(COLOR_S3, HIGH);
+  blueFrequency = pulseIn(COLOR_OUT, LOW);
+  delay(100);
+
+  // === Display the Color Frequency Values ===
+  Serial.print("Red: ");
+  Serial.print(redFrequency);
+  Serial.print(" | Green: ");
+  Serial.print(greenFrequency);
+  Serial.print(" | Blue: ");
+  Serial.println(blueFrequency);
+
+  delay(300);  // Short pause before next reading
+}
