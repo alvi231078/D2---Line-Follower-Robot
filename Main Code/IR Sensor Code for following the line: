@@ -1,0 +1,262 @@
+// === Motor Driver Pins ===
+// These pins control the direction and speed of the two DC motors
+const int ENA = 10;  // PWM signal for Motor A (left)
+const int ENB = 11;  // PWM signal for Motor B (right)
+const int IN1 = 5;   // Motor A direction input 1
+const int IN2 = 6;   // Motor A direction input 2
+const int IN3 = 7;   // Motor B direction input 1
+const int IN4 = 8;   // Motor B direction input 2
+
+// === IR Sensor Pins ===
+// Connected to IR sensors for black line detection
+const int LEFT_SENSOR  = 3;
+const int RIGHT_SENSOR = 4;
+
+// === Speed Settings ===
+const int BASE_SPEED    = 90;   // Normal forward speed
+const int TURN_SPEED    = 70;   // Turning speed
+const int REVERSE_SPEED = 70;   // Reverse speed
+
+// === IR Sensor Logic ===
+// false means the sensor sees the black line
+const bool LINE_DETECTED_STATE = false;
+
+// === Timing Parameters ===
+const int LOOP_DELAY = 8;             // Loop runs every 8 ms
+const int SENSOR_READ_INTERVAL = 2;   // Sensors read every 2 ms
+const int DEBUG_INTERVAL = 200;       // Debug print every 200 ms
+
+// === Non-blocking Time Trackers ===
+unsigned long lastSensorRead = 0;
+unsigned long lastDebugPrint = 0;
+
+// === IR Sensor State Variables ===
+bool leftOnLine = false;
+bool rightOnLine = false;
+bool prevLeftOnLine = false;
+bool prevRightOnLine = false;
+
+// === Filter Arrays for Noise Reduction ===
+const int SENSOR_SAMPLES = 3;
+int leftSensorHistory[SENSOR_SAMPLES] = {0};
+int rightSensorHistory[SENSOR_SAMPLES] = {0};
+int sampleIndex = 0;
+
+// === Sensor Reliability Check ===
+unsigned long rightSensorLastDetected = 0;
+unsigned long leftSensorLastDetected = 0;
+bool rightSensorReliable = true;
+
+// === Setup Function ===
+void setup() {
+  // Configure motor pins as output
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  // Configure sensor pins as input
+  pinMode(LEFT_SENSOR, INPUT);
+  pinMode(RIGHT_SENSOR, INPUT);
+
+  // Initialize serial monitor
+  Serial.begin(9600);
+  while (!Serial);  // Only for Arduino UNO R4 WiFi boards
+  Serial.println("Real-time Line Following Robot");
+  Serial.println("Initializing...");
+
+  stopMotors();      // Make sure motors are stopped
+  delay(1000);       // Give time for hardware to stabilize
+  Serial.println("Started - continuous sensor monitoring");
+}
+
+// === Main Loop ===
+void loop() {
+  unsigned long currentTime = millis();
+
+  // Read IR sensors every 2ms
+  if (currentTime - lastSensorRead >= SENSOR_READ_INTERVAL) {
+    readSensors();
+    lastSensorRead = currentTime;
+  }
+
+  // Apply logic based on current sensor state
+  executeLineFollowing();
+
+  // Print debug info every 200ms
+  if (currentTime - lastDebugPrint >= DEBUG_INTERVAL) {
+    printDebugInfo();
+    lastDebugPrint = currentTime;
+  }
+
+  delay(LOOP_DELAY);  // Keep loop timing consistent
+}
+
+// === Read IR Sensor State with Filtering ===
+void readSensors() {
+  prevLeftOnLine = leftOnLine;
+  prevRightOnLine = rightOnLine;
+
+  int leftTotal = 0, rightTotal = 0;
+
+  // Read sensor values 3 times quickly for reliability
+  for (int i = 0; i < 3; i++) {
+    leftTotal += digitalRead(LEFT_SENSOR);
+    rightTotal += digitalRead(RIGHT_SENSOR);
+    delayMicroseconds(500);
+  }
+
+  // Majority vote to decide real value
+  bool leftRaw = (leftTotal >= 2);
+  bool rightRaw = (rightTotal >= 2);
+
+  // Save current reading to history
+  leftSensorHistory[sampleIndex] = leftRaw;
+  rightSensorHistory[sampleIndex] = rightRaw;
+
+  // Compute filtered reading using recent history
+  int leftSum = 0, rightSum = 0;
+  for (int i = 0; i < SENSOR_SAMPLES; i++) {
+    leftSum += leftSensorHistory[i];
+    rightSum += rightSensorHistory[i];
+  }
+
+  // Final filtered state
+  bool leftFiltered = (leftSum >= (SENSOR_SAMPLES / 2 + 1));
+  bool rightFiltered = (rightSum >= (SENSOR_SAMPLES / 2 + 1));
+
+  // Interpret the line (black) detection
+  leftOnLine = (leftFiltered == LINE_DETECTED_STATE);
+  rightOnLine = (rightFiltered == LINE_DETECTED_STATE);
+
+  // Sensor reliability tracker
+  if (rightOnLine) {
+    rightSensorLastDetected = millis();
+    rightSensorReliable = true;
+  } else if (millis() - rightSensorLastDetected > 5000) {
+    rightSensorReliable = false; // too long no detection
+  }
+
+  sampleIndex = (sampleIndex + 1) % SENSOR_SAMPLES;
+}
+
+// === Line Following Logic ===
+void executeLineFollowing() {
+  if (!leftOnLine && !rightOnLine) {
+    moveForward(BASE_SPEED, BASE_SPEED);  // Go straight
+
+  } else if (leftOnLine && !rightOnLine) {
+    if (!rightSensorReliable) {
+      gentleTurnRight();  // Sensor unreliable? Take it slow
+    } else {
+      turnRight();        // Otherwise, turn hard
+    }
+
+  } else if (!leftOnLine && rightOnLine) {
+    turnLeft();           // Drifted right, so turn left
+
+  } else if (leftOnLine && rightOnLine) {
+    moveForward(BASE_SPEED * 0.6, BASE_SPEED * 0.6);  // On both lines? Slow down
+  }
+
+  // Extra logic to compensate faulty sensor
+  if (!rightSensorReliable && leftOnLine) {
+    moveForwardWithBias(BASE_SPEED, 0.8, 1.0);  // Slightly curve right
+  }
+}
+
+// === Print Sensor and State Information to Serial ===
+void printDebugInfo() {
+  Serial.print("L:"); Serial.print(leftOnLine ? "■" : "□");
+  Serial.print(" R:"); Serial.print(rightOnLine ? "■" : "□");
+
+  if (!rightSensorReliable) {
+    Serial.print(" [R-FAULT]");
+  }
+
+  Serial.print(" | ");
+
+  if (!leftOnLine && !rightOnLine) Serial.println("FORWARD");
+  else if (leftOnLine && !rightOnLine)
+    Serial.println(rightSensorReliable ? "TURN RIGHT" : "GENTLE RIGHT");
+  else if (!leftOnLine && rightOnLine) Serial.println("TURN LEFT");
+  else Serial.println("BOTH ON LINE");
+
+  Serial.print("Raw sensors: L=");
+  Serial.print(digitalRead(LEFT_SENSOR));
+  Serial.print(" R=");
+  Serial.println(digitalRead(RIGHT_SENSOR));
+}
+
+// === Motor Control Functions ===
+void moveForward(int leftSpeed, int rightSpeed) {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  analogWrite(ENA, leftSpeed);
+
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENB, rightSpeed);
+}
+
+void turnRight() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  analogWrite(ENA, TURN_SPEED + 10);
+
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+  analogWrite(ENB, REVERSE_SPEED);
+}
+
+void turnLeft() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+  analogWrite(ENA, REVERSE_SPEED);
+
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENB, TURN_SPEED + 10);
+}
+
+void rotateRight(int speed) {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  analogWrite(ENA, speed);
+
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
+  analogWrite(ENB, speed);
+}
+
+void rotateLeft(int speed) {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
+  analogWrite(ENA, speed);
+
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENB, speed);
+}
+
+void stopMotors() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+}
+
+// === Extra Functions ===
+void moveForwardWithBias(int baseSpeed, float leftBias, float rightBias) {
+  int leftSpeed = baseSpeed * leftBias;
+  int rightSpeed = baseSpeed * rightBias;
+  moveForward(leftSpeed, rightSpeed);
+}
+
+void gentleTurnRight() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  analogWrite(ENA, BASE_SPEED);
+
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENB, BASE_SPEED * 0.3);
+}
+
+void gentleTurnLeft() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  analogWrite(ENA, BASE_SPEED * 0.3);
+
+  digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
+  analogWrite(ENB, BASE_SPEED);
+}
