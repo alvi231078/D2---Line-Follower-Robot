@@ -1,0 +1,45 @@
+// === Ultrasonic Sensor Pin Definitions ===
+const int TRIG_PIN = 13;   // Trigger pin for sending signal
+const int ECHO_PIN = 12;   // Echo pin for receiving the reflected signal
+
+// === Distance Threshold for Obstacle Detection ===
+const int OBSTACLE_DISTANCE_THRESHOLD = 15; // in centimeters
+
+void setup() {
+  // Start serial communication to monitor data
+  Serial.begin(9600);
+
+  // Set pin modes
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+}
+
+void loop() {
+  // === Send Ultrasonic Pulse ===
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);             // Short LOW pulse
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);            // 10 microsecond HIGH pulse to trigger sensor
+  digitalWrite(TRIG_PIN, LOW);
+
+  // === Measure Echo Duration ===
+  long duration = pulseIn(ECHO_PIN, HIGH);  // Time for echo to return
+
+  // === Convert Duration to Distance ===
+  // Speed of sound = 0.034 cm/µs, divide by 2 (go and return)
+  int distance = duration * 0.034 / 2;
+
+  // === Display the Measured Distance ===
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // === Check if Obstacle is Close ===
+  if (distance > 0 && distance <= OBSTACLE_DISTANCE_THRESHOLD) {
+    Serial.println("Obstacle detected within 15 cm!");
+  } else {
+    Serial.println("No nearby obstacle.");
+  }
+
+  delay(500); // Delay for half a second before next reading
+}
