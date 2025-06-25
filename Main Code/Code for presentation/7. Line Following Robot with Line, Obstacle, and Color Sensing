@@ -26,6 +26,10 @@ const int COLOR_S3 = A3;
 const int COLOR_OUT = A4;
 const int COLOR_LED = A5;
 
+// Battery Voltage Pin (assumed pin A6 for battery voltage monitoring)
+const int BATTERY_PIN = A6;
+const float VOLTAGE_THRESHOLD = 4.0;  // 4V threshold for motor speed adjustment
+
 Servo myServo;
 
 unsigned long lastSensorRead = 0, lastDebugPrint = 0;
@@ -60,6 +64,10 @@ void loop() {
   unsigned long currentTime = millis();
   int distance = readDistance();
 
+  // Read battery voltage and check if it's below 4V
+  float batteryVoltage = readBatteryVoltage();
+  int motorSpeed = (batteryVoltage < VOLTAGE_THRESHOLD) ? BASE_SPEED : BASE_SPEED;  // Default to BASE_SPEED if under threshold
+
   if (distance > 0 && distance <= OBSTACLE_DISTANCE_THRESHOLD) {
     stopMotors(); delay(300);
     readColor();
@@ -85,15 +93,15 @@ void loop() {
 
       if (distLeft > distRight) {
         turnLeft(); delay(700);
-        moveForward(BASE_SPEED, BASE_SPEED); delay(600);
+        moveForward(motorSpeed, motorSpeed); delay(600);
         turnRight(); delay(700);
-        moveForward(BASE_SPEED, BASE_SPEED); delay(600);
+        moveForward(motorSpeed, motorSpeed); delay(600);
         finalAlignRight(); delay(600); // reduced speed turn
       } else {
         turnRight(); delay(700);
-        moveForward(BASE_SPEED, BASE_SPEED); delay(600);
+        moveForward(motorSpeed, motorSpeed); delay(600);
         turnLeft(); delay(700);
-        moveForward(BASE_SPEED, BASE_SPEED); delay(600);
+        moveForward(motorSpeed, motorSpeed); delay(600);
         finalAlignLeft(); delay(600); // reduced speed turn
       }
       stopMotors();
@@ -112,6 +120,13 @@ void loop() {
   }
 
   delay(LOOP_DELAY);
+}
+
+// Function to read the battery voltage from the specified pin
+float readBatteryVoltage() {
+  int sensorValue = analogRead(BATTERY_PIN);
+  float voltage = sensorValue * (5.0 / 1023.0) * 2;  // Assuming a voltage divider giving 2x amplification
+  return voltage;
 }
 
 void readColor() {
