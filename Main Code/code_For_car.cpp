@@ -15,23 +15,19 @@ const int BASE_SPEED = 90, TURN_SPEED = 70, REVERSE_SPEED = 70;
 const bool LINE_DETECTED_STATE = false;
 const int LOOP_DELAY = 8, SENSOR_READ_INTERVAL = 2, SENSOR_SAMPLES = 3;
 
-// Ultrasonic & threshold
+// Ultrasonic sensor
 const int TRIG_PIN = 13, ECHO_PIN = 12, OBSTACLE_DISTANCE_THRESHOLD = 10;
 
 // Color sensor pins
-const int COLOR_S0 = A0;
-const int COLOR_S1 = A1;
-const int COLOR_S2 = A2;
-const int COLOR_S3 = A3;
-const int COLOR_OUT = A4;
-const int COLOR_LED = A5;
+const int COLOR_S0 = A0, COLOR_S1 = A1, COLOR_S2 = A2, COLOR_S3 = A3, COLOR_OUT = A4, COLOR_LED = A5;
 
-// Battery Voltage Pin (assumed pin A6 for battery voltage monitoring)
+// Battery voltage monitoring
 const int BATTERY_PIN = A6;
-const float VOLTAGE_THRESHOLD = 4.0;  // 4V threshold for motor speed adjustment
+const float VOLTAGE_THRESHOLD = 4.0;
 
 Servo myServo;
 
+// State variables
 unsigned long lastSensorRead = 0, lastDebugPrint = 0;
 const int DEBUG_INTERVAL = 200;
 bool leftOnLine = false, rightOnLine = false;
@@ -39,6 +35,7 @@ bool rightSensorReliable = true;
 unsigned long rightSensorLastDetected = 0;
 int leftSensorHistory[SENSOR_SAMPLES] = {}, rightSensorHistory[SENSOR_SAMPLES] = {}, sampleIndex = 0;
 
+// Color sensor readings
 int redFrequency = 0, greenFrequency = 0, blueFrequency = 0;
 
 void setup() {
@@ -64,9 +61,9 @@ void loop() {
   unsigned long currentTime = millis();
   int distance = readDistance();
 
-  // Read battery voltage and check if it's below 4V
+  // Battery voltage monitor
   float batteryVoltage = readBatteryVoltage();
-  int motorSpeed = (batteryVoltage < VOLTAGE_THRESHOLD) ? BASE_SPEED : BASE_SPEED;  // Default to BASE_SPEED if under threshold
+  int motorSpeed = (batteryVoltage < VOLTAGE_THRESHOLD) ? BASE_SPEED : BASE_SPEED;
 
   if (distance > 0 && distance <= OBSTACLE_DISTANCE_THRESHOLD) {
     stopMotors(); delay(300);
@@ -79,11 +76,9 @@ void loop() {
     Serial.print(" cm | Detected Color: "); Serial.println(color);
 
     if (color == "Green") {
-      Serial.println("Action: PUSH GREEN OBJECT");
       pushObject();
       return;
     } else {
-      Serial.println("Action: AVOID");
       reverse(REVERSE_SPEED); delay(300);
       stopMotors();
 
@@ -96,13 +91,13 @@ void loop() {
         moveForward(motorSpeed, motorSpeed); delay(600);
         turnRight(); delay(700);
         moveForward(motorSpeed, motorSpeed); delay(600);
-        finalAlignRight(); delay(600); // reduced speed turn
+        finalAlignRight(); delay(600);
       } else {
         turnRight(); delay(700);
         moveForward(motorSpeed, motorSpeed); delay(600);
         turnLeft(); delay(700);
         moveForward(motorSpeed, motorSpeed); delay(600);
-        finalAlignLeft(); delay(600); // reduced speed turn
+        finalAlignLeft(); delay(600);
       }
       stopMotors();
       return;
@@ -122,11 +117,11 @@ void loop() {
   delay(LOOP_DELAY);
 }
 
-// Function to read the battery voltage from the specified pin
+// === Helper Functions ===
+
 float readBatteryVoltage() {
   int sensorValue = analogRead(BATTERY_PIN);
-  float voltage = sensorValue * (5.0 / 1023.0) * 2;  // Assuming a voltage divider giving 2x amplification
-  return voltage;
+  return sensorValue * (5.0 / 1023.0) * 2;
 }
 
 void readColor() {
@@ -136,8 +131,7 @@ void readColor() {
 }
 
 int readColorFrequency(bool s2, bool s3) {
-  digitalWrite(COLOR_S2, s2);
-  digitalWrite(COLOR_S3, s3);
+  digitalWrite(COLOR_S2, s2); digitalWrite(COLOR_S3, s3);
   delay(100);
   return pulseIn(COLOR_OUT, LOW);
 }
@@ -162,8 +156,10 @@ void readSensors() {
 
   int leftSum = 0, rightSum = 0;
   for (int i = 0; i < SENSOR_SAMPLES; i++) {
-    leftSum += leftSensorHistory[i]; rightSum += rightSensorHistory[i];
+    leftSum += leftSensorHistory[i];
+    rightSum += rightSensorHistory[i];
   }
+
   leftOnLine = (leftSum >= (SENSOR_SAMPLES / 2 + 1)) == LINE_DETECTED_STATE;
   rightOnLine = (rightSum >= (SENSOR_SAMPLES / 2 + 1)) == LINE_DETECTED_STATE;
 
@@ -172,14 +168,19 @@ void readSensors() {
   } else if (millis() - rightSensorLastDetected > 5000) {
     rightSensorReliable = false;
   }
+
   sampleIndex = (sampleIndex + 1) % SENSOR_SAMPLES;
 }
 
 void executeLineFollowing() {
-  if (!leftOnLine && !rightOnLine) moveForward(BASE_SPEED, BASE_SPEED);
-  else if (leftOnLine && !rightOnLine) rightSensorReliable ? turnRight() : gentleTurnRight();
-  else if (!leftOnLine && rightOnLine) turnLeft();
-  else moveForward(BASE_SPEED * 0.6, BASE_SPEED * 0.6);
+  if (!leftOnLine && !rightOnLine)
+    moveForward(BASE_SPEED, BASE_SPEED);
+  else if (leftOnLine && !rightOnLine)
+    rightSensorReliable ? turnRight() : gentleTurnRight();
+  else if (!leftOnLine && rightOnLine)
+    turnLeft();
+  else
+    moveForward(BASE_SPEED * 0.6, BASE_SPEED * 0.6);
 
   if (!rightSensorReliable && leftOnLine)
     moveForwardWithBias(BASE_SPEED, 0.8, 1.0);
@@ -203,11 +204,11 @@ void stopMotors() {
 
 void turnRight() {
   digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW); analogWrite(ENA, TURN_SPEED);
-  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH); analogWrite(ENB, TURN_SPEED);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH); analogWrite(ENB, TURN_SPEED * 0.7); // reduced speed for outer wheel
 }
 
 void turnLeft() {
-  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH); analogWrite(ENA, TURN_SPEED);
+  digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH); analogWrite(ENA, TURN_SPEED * 0.7);
   digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW); analogWrite(ENB, TURN_SPEED);
 }
 
@@ -239,7 +240,7 @@ int readDistance() {
 }
 
 void pushObject() {
-  moveForward(BASE_SPEED, BASE_SPEED); delay(2000); // updated from 1000 to 2000
+  moveForward(BASE_SPEED, BASE_SPEED); delay(2000);
   stopMotors(); delay(500);
 }
 
