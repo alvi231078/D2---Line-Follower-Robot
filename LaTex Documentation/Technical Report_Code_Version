@@ -258,7 +258,8 @@
 	The robot successfully integrates sensor data and motor control to follow a black line while avoiding obstacles. Future enhancements may include path memory, camera-based vision, Bluetooth control, and autonomous charging.
 	
 	\section*{Acknowledgment}
-	We would like to thank our professor and lab assistants for their guidance and support throughout the development of this project.
+We sincerely thank our professor for their guidance, feedback, and encouragement throughout this project. We also appreciate the support from lab assistants and the facilities provided by Hochschule Hamm-Lippstadt, which were essential to our development and testing. Finally, we acknowledge the teamwork and dedication of all members that made this project a success.
+
 	
 	\begin{thebibliography}{00}
 		\bibitem{arduino} Arduino Documentation. \url{https://www.arduino.cc/en/Guide}
