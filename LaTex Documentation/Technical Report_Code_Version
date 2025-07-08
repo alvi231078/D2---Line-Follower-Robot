@@ -19,7 +19,7 @@
 	\title{Design and Implementation of a Line Following and Obstacle Avoidance Robot\\ \textbf{\Large (Technical Report)}}
 	
 	\author{
-		\IEEEauthorblockN{Team D2: Faysal Ahammed Tonmoy, Jubair Salehin Razin, Md Ratul Ahmed Alvi, Soaib Ferdous}
+		\IEEEauthorblockN{\textbf{Team D2: Faysal Ahammed Tonmoy, Jubair Salehin Razin, Md Ratul Ahmed Alvi, Soaib Ferdous}}
 		\IEEEauthorblockA{Prototyping and Systems Engineering\\ BSc Electronic Engineering\\ Hochschule Hamm-Lippstadt, Lippstadt, Germany}
 	}
 	
@@ -233,12 +233,12 @@
 			\hline
 			\textbf{Team Member} & \textbf{Commits} \\
 			\hline
-			Faysal Ahammed Tonmoy & 82 \\
-			Jubair Salehin Razin & 122 \\
+			Faysal Ahammed Tonmoy & 90 \\
+			Jubair Salehin Razin & 148 \\
 			Md Ratul Ahmed Alvi & 162 \\
 			Soaib Mahin Ferdous & 36 \\
 			\hline
-			\textbf{Total} & 421 \\
+			\textbf{Total} & 436 \\
 			\hline
 		\end{tabular}
 		\caption{GitHub Commits by Team Members}
